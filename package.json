@@ -1,0 +1,15 @@
+{
+  "name": "teaos",
+  "version": "0.0.0",
+  "description": "local package & component manager",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://git.tea-assets.com/teaos/teaos.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Toru Nomakuchi",
+  "license": "MIT"
+}
