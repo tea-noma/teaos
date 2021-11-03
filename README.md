@@ -81,7 +81,7 @@ Deploying Rules
 Theory
 ---
 
-![image](https://git.tea-assets.com/teaos/teaos/raw/branch/master/doc/operator.tex.svg)
+![image](https://git.tea-assets.com/teaos/teaos/raw/branch/master/doc/operator.tex.png)
 
 - F: function
 - F_a: aspected function
