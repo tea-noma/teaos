@@ -1,4 +1,4 @@
-teaos (0.0.2)
+teaos (0.0.3)
 ===
 
 use local npm package
@@ -50,7 +50,7 @@ dynamic configurable local packages
 
 ```javascript
 const teaos = require('teaos');
-teaos.use("@something", { resources: '*' }); // somthing/extensions/* are loaded
+teaos.use("@something", { resources: '*' }); // somthing/lib/extensions/* are loaded
 ```
 
 
@@ -81,14 +81,14 @@ Deploying Rules
 Theory
 ---
 
-![image](https://git.tea-assets.com/teaos/teaos/raw/branch/master/doc/operator.tex.png)
+![image](https://git.tea-assets.com/teaos/teaos/raw/branch/master/doc/operator.tex.svg)
 
 - F: function
 - F_a: aspected function
 - F_m: composited function
 - F_c: context
 - O_d: operator
-- O_{inverse}: inversavle operator
+- O_{inverse}: inversable operator
 - V: variable
 - V_c: composited variable
 
@@ -96,6 +96,9 @@ Theory
 History
 ---
 
+- version 0.0.3
+  - improve trace log
+  - add theory doc
 - version 0.0.2
   - support teaos.use()
   - support teaos.extensions()
