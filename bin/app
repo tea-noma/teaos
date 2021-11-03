@@ -1,5 +1,78 @@
 #!/usr/bin/env node
 
+const teaos = require("..");
 const pack = require("../package.json");
+const fs = require('fs');
+const cwd = process.cwd();
 
-console.log(pack.version);
+function log_trace(type, desc, trace){
+  console.log(type, desc, trace);
+}
+
+function log_report(){
+}
+
+teaos.set("libpath", teaos.makeRequirePath(cwd) + '/lib/');
+
+teaos.on('require', (name) => {
+  const traces = getStackTrace();
+  log_trace('require', name, traces);
+});
+
+teaos.on('declare', (desc) => {
+  const traces = getStackTrace();
+  log_trace('declare', desc, traces);
+});
+
+function getPackages(){
+  const results = [];
+  try {
+    const files = fs.readdirSync("./lib");
+    for(let i = 0; i < files.length; i++){
+      try {
+        fs.statSync("./lib/" + files[i] + "/index.js");
+        results.push(files[i]);
+      }catch(err){
+      }
+    }
+  }catch(err){
+  }
+  return results;
+}
+
+function getStackTrace(){
+  const results = [];
+  try { throw new Error(); }
+  catch (e) {
+    let regex = /(\w+)@|at ([^ ]+) \(([^)]+):([0-9]+):([0-9]+)\)/g;
+    let stack = e.stack;
+    let m;
+    while(m = regex.exec(stack)){
+      let callerName = (m != null) ? m[1] || m[2] : 'NONE';
+      let trace = {name: callerName, path: m[3], line: m[4], offset: m[5]};
+      if(trace.path.substr(0, cwd.length) == cwd){
+        trace.type = 'in-project';
+        trace.rel = trace.path.substr(cwd.length + 1).replace(/\\/g, '/');
+        if(trace.rel.substr(0, 4) == 'lib/'){
+
+        }
+      }
+      results.push(trace);
+    }
+  }
+  return results;
+}
+
+switch(process.argv[2]){
+  case 'desc':{
+    teaos.require('@' + process.argv[3]);
+    log_report();
+    break;}
+  case 'ls':{
+    const results = getPackages();
+    console.log(results);
+    break;}
+  default:
+    console.log("teaos package: ", pack.version);
+    break;
+}
