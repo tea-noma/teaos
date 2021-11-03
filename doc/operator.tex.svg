@@ -1,4 +1,4 @@
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="100ex" height="38.343ex" style="vertical-align: -36.338ex; max-width: 60000px;" viewBox="0 -863.1 43055.4 16508.6" role="img" focusable="false" xmlns="http://www.w3.org/2000/svg" aria-labelledby="MathJax-SVG-1-Title">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="100ex" height="44.343ex" style="vertical-align: -42.338ex; max-width: 60000px;" viewBox="0 -863.1 43055.4 19091.9" role="img" focusable="false" xmlns="http://www.w3.org/2000/svg" aria-labelledby="MathJax-SVG-1-Title">
 <title id="MathJax-SVG-1-Title">g(x), f(y) ∈ F\\
 
 f(y) = 
@@ -15,9 +15,10 @@ g_1(x)
 g_2(x)
 ...
 g_m(x)
-\end{bmatrix}, g(y)∈F_m\\
+\end{bmatrix}, g(x)∈F_m\\
 D = \prod_{k=0} D_k, D∈O_d\\
-f(y) = D F(x), f(y)∈F_m\\
+DL = \sum_{k=0} DL_k, DL∈O_l\\
+f(y) = D g(x), f(y)∈F_m\\
 f_{t=t_n}(x) = D(t) f_{t=t_0}(x), f(y)∈F_c\\
 D_{inverse} = D^{-1}, D_{inverse}∈O_{inverse}\\
 g(x) = D^{-1} f(y)\\
@@ -49,6 +50,9 @@ f(y_n) = D F(x_n), f(y_n)∈V_c\\
 <path stroke-width="1" id="E1-MJMAIN-30" d="M96 585Q152 666 249 666Q297 666 345 640T423 548Q460 465 460 320Q460 165 417 83Q397 41 362 16T301 -15T250 -22Q224 -22 198 -16T137 16T82 83Q39 165 39 320Q39 494 96 585ZM321 597Q291 629 250 629Q208 629 178 597Q153 571 145 525T137 333Q137 175 145 125T181 46Q209 16 250 16Q290 16 318 46Q347 76 354 130T362 333Q362 478 354 524T321 597Z"></path>
 <path stroke-width="1" id="E1-MJMATHI-4F" d="M740 435Q740 320 676 213T511 42T304 -22Q207 -22 138 35T51 201Q50 209 50 244Q50 346 98 438T227 601Q351 704 476 704Q514 704 524 703Q621 689 680 617T740 435ZM637 476Q637 565 591 615T476 665Q396 665 322 605Q242 542 200 428T157 216Q157 126 200 73T314 19Q404 19 485 98T608 313Q637 408 637 476Z"></path>
 <path stroke-width="1" id="E1-MJMATHI-64" d="M366 683Q367 683 438 688T511 694Q523 694 523 686Q523 679 450 384T375 83T374 68Q374 26 402 26Q411 27 422 35Q443 55 463 131Q469 151 473 152Q475 153 483 153H487H491Q506 153 506 145Q506 140 503 129Q490 79 473 48T445 8T417 -8Q409 -10 393 -10Q359 -10 336 5T306 36L300 51Q299 52 296 50Q294 48 292 46Q233 -10 172 -10Q117 -10 75 30T33 157Q33 205 53 255T101 341Q148 398 195 420T280 442Q336 442 364 400Q369 394 369 396Q370 400 396 505T424 616Q424 629 417 632T378 637H357Q351 643 351 645T353 664Q358 683 366 683ZM352 326Q329 405 277 405Q242 405 210 374T160 293Q131 214 119 129Q119 126 119 118T118 106Q118 61 136 44T179 26Q233 26 290 98L298 109L352 326Z"></path>
+<path stroke-width="1" id="E1-MJMATHI-4C" d="M228 637Q194 637 192 641Q191 643 191 649Q191 673 202 682Q204 683 217 683Q271 680 344 680Q485 680 506 683H518Q524 677 524 674T522 656Q517 641 513 637H475Q406 636 394 628Q387 624 380 600T313 336Q297 271 279 198T252 88L243 52Q243 48 252 48T311 46H328Q360 46 379 47T428 54T478 72T522 106T564 161Q580 191 594 228T611 270Q616 273 628 273H641Q647 264 647 262T627 203T583 83T557 9Q555 4 553 3T537 0T494 -1Q483 -1 418 -1T294 0H116Q32 0 32 10Q32 17 34 24Q39 43 44 45Q48 46 59 46H65Q92 46 125 49Q139 52 144 61Q147 65 216 339T285 628Q285 635 228 637Z"></path>
+<path stroke-width="1" id="E1-MJSZ2-2211" d="M60 948Q63 950 665 950H1267L1325 815Q1384 677 1388 669H1348L1341 683Q1320 724 1285 761Q1235 809 1174 838T1033 881T882 898T699 902H574H543H251L259 891Q722 258 724 252Q725 250 724 246Q721 243 460 -56L196 -356Q196 -357 407 -357Q459 -357 548 -357T676 -358Q812 -358 896 -353T1063 -332T1204 -283T1307 -196Q1328 -170 1348 -124H1388Q1388 -125 1381 -145T1356 -210T1325 -294L1267 -449L666 -450Q64 -450 61 -448Q55 -446 55 -439Q55 -437 57 -433L590 177Q590 178 557 222T452 366T322 544L56 909L55 924Q55 945 60 948Z"></path>
+<path stroke-width="1" id="E1-MJMATHI-6C" d="M117 59Q117 26 142 26Q179 26 205 131Q211 151 215 152Q217 153 225 153H229Q238 153 241 153T246 151T248 144Q247 138 245 128T234 90T214 43T183 6T137 -11Q101 -11 70 11T38 85Q38 97 39 102L104 360Q167 615 167 623Q167 626 166 628T162 632T157 634T149 635T141 636T132 637T122 637Q112 637 109 637T101 638T95 641T94 647Q94 649 96 661Q101 680 107 682T179 688Q194 689 213 690T243 693T254 694Q266 694 266 686Q266 675 193 386T118 83Q118 81 118 75T117 65V59Z"></path>
 <path stroke-width="1" id="E1-MJMATHI-74" d="M26 385Q19 392 19 395Q19 399 22 411T27 425Q29 430 36 430T87 431H140L159 511Q162 522 166 540T173 566T179 586T187 603T197 615T211 624T229 626Q247 625 254 615T261 596Q261 589 252 549T232 470L222 433Q222 431 272 431H323Q330 424 330 420Q330 398 317 385H210L174 240Q135 80 135 68Q135 26 162 26Q197 26 230 60T283 144Q285 150 288 151T303 153H307Q322 153 322 145Q322 142 319 133Q314 117 301 95T267 48T216 6T155 -11Q125 -11 98 4T59 56Q57 64 57 83V101L92 241Q127 382 128 383Q128 385 77 385H26Z"></path>
 <path stroke-width="1" id="E1-MJMATHI-63" d="M34 159Q34 268 120 355T306 442Q362 442 394 418T427 355Q427 326 408 306T360 285Q341 285 330 295T319 325T330 359T352 380T366 386H367Q367 388 361 392T340 400T306 404Q276 404 249 390Q228 381 206 359Q162 315 142 235T121 119Q121 73 147 50Q169 26 205 26H209Q321 26 394 111Q403 121 406 121Q410 121 419 112T429 98T420 83T391 55T346 25T282 0T202 -11Q127 -11 81 37T34 159Z"></path>
 <path stroke-width="1" id="E1-MJMATHI-69" d="M184 600Q184 624 203 642T247 661Q265 661 277 649T290 619Q290 596 270 577T226 557Q211 557 198 567T184 600ZM21 287Q21 295 30 318T54 369T98 420T158 442Q197 442 223 419T250 357Q250 340 236 301T196 196T154 83Q149 61 149 51Q149 26 166 26Q175 26 185 29T208 43T235 78T260 137Q263 149 265 151T282 153Q302 153 302 143Q302 135 293 112T268 61T223 11T161 -11Q129 -11 102 10T74 74Q74 91 79 106T122 220Q160 321 166 341T173 380Q173 404 156 404H154Q124 404 99 371T61 287Q60 286 59 284T58 281T56 279T53 278T49 278T41 278H27Q21 284 21 287Z"></path>
@@ -122,7 +126,7 @@ f(y_n) = D F(x_n), f(y_n)∈V_c\\
  <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-61" x="910" y="-213"></use>
 </g>
 </g>
-<g transform="translate(12800,-2939)">
+<g transform="translate(12762,-2939)">
  <use xlink:href="#E1-MJMATHI-67" x="0" y="0"></use>
  <use xlink:href="#E1-MJMAIN-28" x="480" y="0"></use>
  <use xlink:href="#E1-MJMATHI-78" x="870" y="0"></use>
@@ -163,10 +167,10 @@ f(y_n) = D F(x_n), f(y_n)∈V_c\\
  <use xlink:href="#E1-MJMAIN-2C" x="12664" y="0"></use>
  <use xlink:href="#E1-MJMATHI-67" x="13109" y="0"></use>
  <use xlink:href="#E1-MJMAIN-28" x="13590" y="0"></use>
- <use xlink:href="#E1-MJMATHI-79" x="13979" y="0"></use>
- <use xlink:href="#E1-MJMAIN-29" x="14477" y="0"></use>
- <use xlink:href="#E1-MJMAIN-2208" x="15144" y="0"></use>
-<g transform="translate(16089,0)">
+ <use xlink:href="#E1-MJMATHI-78" x="13979" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-29" x="14552" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-2208" x="15219" y="0"></use>
+<g transform="translate(16164,0)">
  <use xlink:href="#E1-MJMATHI-46" x="0" y="0"></use>
  <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-6D" x="910" y="-213"></use>
 </g>
@@ -194,29 +198,55 @@ f(y_n) = D F(x_n), f(y_n)∈V_c\\
  <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-64" x="1079" y="-213"></use>
 </g>
 </g>
-<g transform="translate(16052,-7003)">
+<g transform="translate(16184,-7203)">
+ <use xlink:href="#E1-MJMATHI-44" x="0" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-4C" x="828" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-3D" x="1787" y="0"></use>
+<g transform="translate(2844,0)">
+ <use xlink:href="#E1-MJSZ2-2211" x="0" y="0"></use>
+<g transform="translate(85,-1110)">
+ <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-6B" x="0" y="0"></use>
+ <use transform="scale(0.707)" xlink:href="#E1-MJMAIN-3D" x="521" y="0"></use>
+ <use transform="scale(0.707)" xlink:href="#E1-MJMAIN-30" x="1300" y="0"></use>
+</g>
+</g>
+ <use xlink:href="#E1-MJMATHI-44" x="4455" y="0"></use>
+<g transform="translate(5283,0)">
+ <use xlink:href="#E1-MJMATHI-4C" x="0" y="0"></use>
+ <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-6B" x="963" y="-213"></use>
+</g>
+ <use xlink:href="#E1-MJMAIN-2C" x="6433" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-44" x="6879" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-4C" x="7707" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-2208" x="8666" y="0"></use>
+<g transform="translate(9612,0)">
+ <use xlink:href="#E1-MJMATHI-4F" x="0" y="0"></use>
+ <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-6C" x="1079" y="-213"></use>
+</g>
+</g>
+<g transform="translate(16186,-9610)">
  <use xlink:href="#E1-MJMATHI-66" x="0" y="0"></use>
  <use xlink:href="#E1-MJMAIN-28" x="550" y="0"></use>
  <use xlink:href="#E1-MJMATHI-79" x="940" y="0"></use>
  <use xlink:href="#E1-MJMAIN-29" x="1437" y="0"></use>
  <use xlink:href="#E1-MJMAIN-3D" x="2104" y="0"></use>
  <use xlink:href="#E1-MJMATHI-44" x="3161" y="0"></use>
- <use xlink:href="#E1-MJMATHI-46" x="3989" y="0"></use>
- <use xlink:href="#E1-MJMAIN-28" x="4739" y="0"></use>
- <use xlink:href="#E1-MJMATHI-78" x="5128" y="0"></use>
- <use xlink:href="#E1-MJMAIN-29" x="5701" y="0"></use>
- <use xlink:href="#E1-MJMAIN-2C" x="6090" y="0"></use>
- <use xlink:href="#E1-MJMATHI-66" x="6535" y="0"></use>
- <use xlink:href="#E1-MJMAIN-28" x="7086" y="0"></use>
- <use xlink:href="#E1-MJMATHI-79" x="7475" y="0"></use>
- <use xlink:href="#E1-MJMAIN-29" x="7973" y="0"></use>
- <use xlink:href="#E1-MJMAIN-2208" x="8640" y="0"></use>
-<g transform="translate(9585,0)">
+ <use xlink:href="#E1-MJMATHI-67" x="3989" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-28" x="4470" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-78" x="4859" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-29" x="5432" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-2C" x="5821" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-66" x="6266" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-28" x="6817" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-79" x="7206" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-29" x="7704" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-2208" x="8371" y="0"></use>
+<g transform="translate(9316,0)">
  <use xlink:href="#E1-MJMATHI-46" x="0" y="0"></use>
  <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-6D" x="910" y="-213"></use>
 </g>
 </g>
-<g transform="translate(14213,-8436)">
+<g transform="translate(14213,-11043)">
  <use xlink:href="#E1-MJMATHI-66" x="0" y="0"></use>
 <g transform="translate(490,-150)">
  <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-74" x="0" y="0"></use>
@@ -259,7 +289,7 @@ f(y_n) = D F(x_n), f(y_n)∈V_c\\
  <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-63" x="910" y="-213"></use>
 </g>
 </g>
-<g transform="translate(14265,-10053)">
+<g transform="translate(14265,-12660)">
  <use xlink:href="#E1-MJMATHI-44" x="0" y="0"></use>
 <g transform="translate(828,-150)">
  <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-69" x="0" y="0"></use>
@@ -305,7 +335,7 @@ f(y_n) = D F(x_n), f(y_n)∈V_c\\
 </g>
 </g>
 </g>
-<g transform="translate(18114,-11564)">
+<g transform="translate(18114,-14171)">
  <use xlink:href="#E1-MJMATHI-67" x="0" y="0"></use>
  <use xlink:href="#E1-MJMAIN-28" x="480" y="0"></use>
  <use xlink:href="#E1-MJMATHI-78" x="870" y="0"></use>
@@ -323,7 +353,7 @@ f(y_n) = D F(x_n), f(y_n)∈V_c\\
  <use xlink:href="#E1-MJMATHI-79" x="5938" y="0"></use>
  <use xlink:href="#E1-MJMAIN-29" x="6436" y="0"></use>
 </g>
-<g transform="translate(19252,-12930)">
+<g transform="translate(19252,-15537)">
  <use xlink:href="#E1-MJMATHI-78" x="0" y="0"></use>
  <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-6E" x="809" y="-213"></use>
  <use xlink:href="#E1-MJMAIN-2C" x="1097" y="0"></use>
@@ -334,7 +364,7 @@ f(y_n) = D F(x_n), f(y_n)∈V_c\\
  <use xlink:href="#E1-MJMAIN-2208" x="2835" y="0"></use>
  <use xlink:href="#E1-MJMATHI-56" x="3780" y="0"></use>
 </g>
-<g transform="translate(15459,-14317)">
+<g transform="translate(15459,-16924)">
  <use xlink:href="#E1-MJMATHI-66" x="0" y="0"></use>
  <use xlink:href="#E1-MJMAIN-28" x="550" y="0"></use>
 <g transform="translate(940,0)">

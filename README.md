@@ -1,4 +1,4 @@
-teaos (0.0.4)
+teaos (0.0.5)
 ===
 
 use local npm package
@@ -85,9 +85,10 @@ Theory
 
 - F: function
 - F_a: aspected function
-- F_m: composited function
-- F_c: context
-- O_d: operator
+- F_m: composited function (Set model)
+- F_c: context (ex. commit, p2p, probe, loging, Kalman filter)
+- O_d: operator (ex. integral, decode/encode)
+- O_l: linear operator (ex. step function, matrix)
 - O_{inverse}: inversable operator
 - V: variable
 - V_c: composited variable
@@ -96,6 +97,8 @@ Theory
 History
 ---
 
+- version 0.0.5
+  - Add Theory
 - version 0.0.4
   - SVG to PNG
 - version 0.0.3
