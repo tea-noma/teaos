@@ -22,9 +22,7 @@ function makeRequirePath(abs){
   return null;
 }
 
-exports.makeRequirePath = makeRequirePath;
-
-exports.set = function(name, value){
+function teaos_set(name, value){
 	switch(name){
 	case 'libpath':
 		libpath = value;
@@ -34,14 +32,14 @@ exports.set = function(name, value){
 	}
 }
 
-exports.on = function(scope, handler){
+function teaos_on(scope, handler){
 	if(!listeners[scope]){
 		listeners[scope] = [];
 	}
 	listeners[scope].push(handler);
 }
 
-exports.declare = function(desc){
+function teaos_declare(desc){
 	const funcs = listeners["declare"];
 	if(funcs){
 		for(let i = 0; i < funcs.length; i++){
@@ -50,7 +48,8 @@ exports.declare = function(desc){
 	}
 }
 
-exports.require = function(name){
+// load modules in statically
+function teaos_require(name){
 	if(name[0] == '@'){
 		const funcs = listeners["require"];
 		if(funcs){
@@ -63,3 +62,73 @@ exports.require = function(name){
 		return require(name);
 	}
 }
+
+// load modules in dynamically
+function teaos_use(name, options){
+  const mod = teaos_require(name);
+  let inst = null;
+  if(mod.use){
+    inst = mod.use(options);
+  }else{
+    inst = mod;
+  }
+  if(!mod.hasOwnProperty('__teaos')){
+    mod.__teaos = { extensions: teaos_exteensions(name) || false };
+  }
+  if(options && options.resources){
+    const extensions = mod.__teaos.extensions;
+    if(options.resources == '*'){ // require all resources
+      if(extensions){
+        for(let k in extensions){
+          teaos_require(name + '/lib/extensions/' + k);
+        }
+      }
+    }else if(options.resources instanceof Object){
+      for(let kk in options.resources){
+        if(extensions[kk]){
+          if(options.resources[kk] == '*'){
+              teaos_require(name + '/lib/extensions/' + kk);
+          }else if(options.resources[kk] instanceof Object){
+            for(let k in options.resources[kk]){
+              teaos_require(name + '/lib/extensions/' + kk + '/' + k);
+            }
+          }
+        }
+      }
+    }
+  }
+  return inst;
+}
+
+function teaos_exteensions(name){
+  if(name[0] == '@'){
+    const results = {};
+    try {
+      const files = fs.readdirSync(libpath + name.substr(1) + '/lib/extensions');
+      files.forEach((file) => {
+        if(file.indexOf('.') != -1){
+          results[file] = true;
+        }else{
+          const sfiles = fs.readdirSync(libpath + name.substr(1) + '/lib/extensions/' + file);
+          if(sfiles.length){
+            results[file] = {};
+            sfiles.forEach((sfile) => {
+              results[file][sfile] = true;
+            });
+          }
+        }
+      });
+    }catch(err){
+    }
+    return results;
+  }
+  return null;
+}
+
+exports.makeRequirePath = makeRequirePath;
+exports.set = teaos_set;
+exports.on = teaos_on;
+exports.declare = teaos_declare;
+exports.require = teaos_require;
+exports.use = teaos_use;
+exports.exteensions = teaos_exteensions;

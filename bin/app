@@ -1,18 +1,38 @@
 #!/usr/bin/env node
-
-const teaos = require("..");
-const pack = require("../package.json");
-const fs = require('fs');
+const path = require('path');
 const cwd = process.cwd();
 
-function log_trace(type, desc, trace){
-  console.log(type, desc, trace);
+const libTeaos = require("..");
+let teaos = null;
+
+try {
+  teaos = require(path.join('../' + libTeaos.makeRequirePath(cwd), 'node_modules/teaos'));
+}catch(err){
+  console.error(err);
+  teaos = libTeaos;
+}
+
+const pack = require("../package.json");
+const fs = require('fs');
+
+const reports = [];
+
+function log_trace(type, desc, traces){
+  reports.push({type, desc, traces});
 }
 
 function log_report(){
+  for(let i = 0; i < reports.length; i++){
+    const report = reports[i];
+    const trace = traces_getPackage(report.traces);
+    console.log(report.type, report.desc);
+    if(trace){
+      console.log(trace);
+    }
+  }
 }
 
-teaos.set("libpath", teaos.makeRequirePath(cwd) + '/lib/');
+// teaos.set("libpath", libTeaos.makeRequirePath(cwd) + '/lib/');
 
 teaos.on('require', (name) => {
   const traces = getStackTrace();
@@ -63,10 +83,38 @@ function getStackTrace(){
   return results;
 }
 
+function traces_getPackage(traces){
+  for(let i = 0; i < traces.length; i++){
+    if(traces[i].type == 'in-project'){
+      return traces[i];
+    }
+  }
+  return null;
+}
+
 switch(process.argv[2]){
-  case 'desc':{
+  case 'desc':
+  case 'require':{
     teaos.require('@' + process.argv[3]);
-    log_report();
+    log_report(process.argv[3]);
+    break;}
+  case 'use.all':{
+    const results = getPackages();
+    for(let i = 0; i < results.length; i++){
+      teaos.use('@' + results[i], { resources: '*' });
+    }
+    log_report(null);
+    break;}
+  case 'use':{
+    teaos.use('@' + process.argv[3], { resources: '*' });
+    log_report(process.argv[3]);
+    break;}
+  case 'require.all':{
+    const results = getPackages();
+    for(let i = 0; i < results.length; i++){
+      teaos.require('@' + results[i]);
+    }
+    log_report(null);
     break;}
   case 'ls':{
     const results = getPackages();
