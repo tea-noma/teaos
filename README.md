@@ -1,4 +1,4 @@
-teaos (0.0.3)
+teaos (0.0.4)
 ===
 
 use local npm package
@@ -81,7 +81,7 @@ Deploying Rules
 Theory
 ---
 
-![image](https://git.tea-assets.com/teaos/teaos/raw/branch/master/doc/operator.tex.svg)
+![image](https://git.tea-assets.com/teaos/teaos/raw/branch/master/doc/operator.tex.png)
 
 - F: function
 - F_a: aspected function
@@ -96,6 +96,8 @@ Theory
 History
 ---
 
+- version 0.0.4
+  - SVG to PNG
 - version 0.0.3
   - improve trace log
   - add theory doc
