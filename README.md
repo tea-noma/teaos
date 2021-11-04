@@ -82,7 +82,7 @@ Deploying Rules
 Theory
 ---
 
-![image](https://git.tea-assets.com/teaos/teaos/raw/branch/master/doc/operator.tex.png)
+![image](https://git.tea-assets.com/teaos/teaos/raw/commit/eff9f0abbdd78b7f0e6022d0c182cead939ff2be/doc/operator.tex.png)
 
 - F: function
 - F_a: aspected function
@@ -93,7 +93,10 @@ Theory
 - O_{inverse}: inversable operator
 - V: variable
 - V_c: composited variable
-
+- Λ: Eigenvalue
+- X_c: Eigenvector
+- P: Probability density function
+- H_e: Entropy
 
 History
 ---
