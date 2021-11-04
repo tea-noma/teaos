@@ -73,7 +73,7 @@ function teaos_use(name, options){
     inst = mod;
   }
   if(!mod.hasOwnProperty('__teaos')){
-    mod.__teaos = { extensions: teaos_exteensions(name) || false };
+    mod.__teaos = { extensions: teaos_extensions(name) || false };
   }
   if(options && options.resources){
     const extensions = mod.__teaos.extensions;
@@ -100,7 +100,7 @@ function teaos_use(name, options){
   return inst;
 }
 
-function teaos_exteensions(name){
+function teaos_extensions(name){
   if(name[0] == '@'){
     const results = {};
     try {
@@ -131,4 +131,4 @@ exports.on = teaos_on;
 exports.declare = teaos_declare;
 exports.require = teaos_require;
 exports.use = teaos_use;
-exports.exteensions = teaos_exteensions;
+exports.extensions = teaos_extensions;

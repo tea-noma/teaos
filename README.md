@@ -92,7 +92,10 @@ Theory
 - O_{inverse}: inversable operator
 - V: variable
 - V_c: composited variable
-
+- Λ: Eigenvalue
+- X_c: Eigenvector
+- P: Probability density function
+- H_e: Entropy
 
 History
 ---

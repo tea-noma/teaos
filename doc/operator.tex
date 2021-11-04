@@ -1,6 +1,6 @@
 g(x), f(y) ∈ F\\
 
-f(y) = 
+f(y) =
 \begin{bmatrix}
 f_1(y)
 f_2(y)
@@ -8,7 +8,7 @@ f_2(y)
 f_n(y)
 \end{bmatrix}, f(y)∈F_a\\
 
-g(x) = 
+g(x) =
 \begin{bmatrix}
 g_1(x)
 g_2(x)
@@ -23,3 +23,14 @@ D_{inverse} = D^{-1}, D_{inverse}∈O_{inverse}\\
 g(x) = D^{-1} f(y)\\
 x_n,y_n∈V\\
 f(y_n) = D F(x_n), f(y_n)∈V_c\\
+
+A_t X_i = λ X_{i,t}, X_i∈X_c, λ∈Λ \\
+x_t = ¥sum_i a_{i,t} * X_{I,t} \\
+x_{t+1} = ¥sum_i  a_{i,t+1} * X_{i,t+1} \\
+x_{t+1} = A_t x_t \\
+x_{t+1}  = (A_t - E) x_t + x_t \\
+x_{t+1} = A_{t} x_t \\
+p(x), p(x)∈P \\
+h(X) = - ¥int_{-∞}^{∞} p(x) log p(x) dx, h(X)∈H_e \\
+h(X) = H(U_n) - H(X) \\
+H(U_n) = log n \\
