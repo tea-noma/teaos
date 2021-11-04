@@ -32,7 +32,7 @@ x_{t+1} = A_t x_t \\
 x_{t+1}  = (A_t - E) x_t + x_t \\
 x_{t+1} = A_{t} x_t \\
 p(x), p(x)∈P \\
-h(X) = - \int_{-∞}^{∞} p(x) log p(x) dx, h(X)∈H_e \\
+h(X) = - \int_{-∞}^{∞} p(x) log(p(x)) dx, h(X)∈H_e \\
 h(X) = H(U_n) - H(X) \\
 H(U_n) = log n \\
 </title>
@@ -587,7 +587,7 @@ H(U_n) = log n \\
  <use xlink:href="#E1-MJMAIN-2208" x="4432" y="0"></use>
  <use xlink:href="#E1-MJMATHI-50" x="5378" y="0"></use>
 </g>
-<g transform="translate(12639,-31174)">
+<g transform="translate(12249,-31174)">
  <use xlink:href="#E1-MJMATHI-68" x="0" y="0"></use>
  <use xlink:href="#E1-MJMAIN-28" x="576" y="0"></use>
  <use xlink:href="#E1-MJMATHI-58" x="966" y="0"></use>
@@ -609,19 +609,21 @@ H(U_n) = log n \\
  <use xlink:href="#E1-MJMATHI-6C" x="8423" y="0"></use>
  <use xlink:href="#E1-MJMATHI-6F" x="8721" y="0"></use>
  <use xlink:href="#E1-MJMATHI-67" x="9207" y="0"></use>
- <use xlink:href="#E1-MJMATHI-70" x="9687" y="0"></use>
- <use xlink:href="#E1-MJMAIN-28" x="10191" y="0"></use>
- <use xlink:href="#E1-MJMATHI-78" x="10580" y="0"></use>
- <use xlink:href="#E1-MJMAIN-29" x="11153" y="0"></use>
- <use xlink:href="#E1-MJMATHI-64" x="11542" y="0"></use>
- <use xlink:href="#E1-MJMATHI-78" x="12066" y="0"></use>
- <use xlink:href="#E1-MJMAIN-2C" x="12638" y="0"></use>
- <use xlink:href="#E1-MJMATHI-68" x="13083" y="0"></use>
- <use xlink:href="#E1-MJMAIN-28" x="13660" y="0"></use>
- <use xlink:href="#E1-MJMATHI-58" x="14049" y="0"></use>
- <use xlink:href="#E1-MJMAIN-29" x="14902" y="0"></use>
- <use xlink:href="#E1-MJMAIN-2208" x="15569" y="0"></use>
-<g transform="translate(16515,0)">
+ <use xlink:href="#E1-MJMAIN-28" x="9687" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-70" x="10077" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-28" x="10580" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-78" x="10970" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-29" x="11542" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-29" x="11932" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-64" x="12321" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-78" x="12845" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-2C" x="13417" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-68" x="13862" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-28" x="14439" y="0"></use>
+ <use xlink:href="#E1-MJMATHI-58" x="14828" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-29" x="15681" y="0"></use>
+ <use xlink:href="#E1-MJMAIN-2208" x="16348" y="0"></use>
+<g transform="translate(17294,0)">
  <use xlink:href="#E1-MJMATHI-48" x="0" y="0"></use>
  <use transform="scale(0.707)" xlink:href="#E1-MJMATHI-65" x="1175" y="-213"></use>
 </g>
