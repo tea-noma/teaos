@@ -71,8 +71,9 @@ Deploying Rules
   - lib/{local package}/lib/extensions/{resource type}/{resource name}.js
 - test path: lib/{local package}/tests
 - resource types:
+  - **value**: general value (reserved)
   - **variable**: general variable (reserved)
-  - **function**: { type: 'function', func: Function }
+  - **function**: { type: 'function', name: (default: Function.name), func: Function }
   - **operator**: general operator (reserved)
   - **command**: command as operator (reserved)
   - **expression**: expression as operator (reserved)
