@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const listeners = {};
 
 let libpath = '../../lib/';
@@ -104,12 +106,12 @@ function teaos_extensions(name){
   if(name[0] == '@'){
     const results = {};
     try {
-      const files = fs.readdirSync(libpath + name.substr(1) + '/lib/extensions');
+      const files = fs.readdirSync(path.join(__dirname, libpath + name.substr(1) + '/lib/extensions'));
       files.forEach((file) => {
         if(file.indexOf('.') != -1){
           results[file] = true;
         }else{
-          const sfiles = fs.readdirSync(libpath + name.substr(1) + '/lib/extensions/' + file);
+          const sfiles = fs.readdirSync(path.join(__dirname, libpath + name.substr(1) + '/lib/extensions/' + file));
           if(sfiles.length){
             results[file] = {};
             sfiles.forEach((sfile) => {
@@ -119,6 +121,7 @@ function teaos_extensions(name){
         }
       });
     }catch(err){
+      console.error(err);
     }
     return results;
   }

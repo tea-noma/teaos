@@ -1,4 +1,4 @@
-teaos (0.0.5)
+teaos (0.0.6)
 ===
 
 use local npm package
@@ -100,6 +100,8 @@ Theory
 History
 ---
 
+- version 0.0.6
+  - Bugfix: extensions resources path
 - version 0.0.5
   - Add Theory
 - version 0.0.4
