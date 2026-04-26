@@ -185,6 +185,10 @@ function teaos_extensions(name){
   return results;
 }
 
+function teaos_getTools(){
+  return require('./lib/objects/teaos-tool');
+}
+
 exports.makeRequirePath = makeRequirePath;
 exports.set = teaos_set;
 exports.on = teaos_on;
@@ -192,3 +196,4 @@ exports.declare = teaos_declare;
 exports.require = teaos_require;
 exports.use = teaos_use;
 exports.extensions = teaos_extensions;
+exports.getTools = teaos_getTools;

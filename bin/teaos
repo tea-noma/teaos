@@ -46,7 +46,50 @@ function loadTeaosTool(name){
   }
 }
 
-// teaos.set("libpath", libTeaos.makeRequirePath(cwd) + '/lib/');
+function loadExternalTeaosTool(name){
+  if(!name || (name.indexOf('/') === -1)){
+    return false;
+  }
+
+  const index = name.indexOf('/');
+  const packageName = name.slice(0, index);
+  const toolName = name.slice(index + 1);
+  const localPackageName = packageName[0] === '@' ? packageName.slice(1) : packageName;
+
+  if(!localPackageName || !toolName){
+    return false;
+  }
+
+  const candidates = [
+    path.join(cwd, 'lib', localPackageName, 'lib/extensions/teaos-tool', toolName + '.js'),
+    path.join(cwd, 'node_modules', localPackageName, 'lib/extensions/teaos-tool', toolName + '.js')
+  ];
+
+  for(let i = 0; i < candidates.length; i++){
+    try {
+      fs.statSync(candidates[i]);
+      require(candidates[i]);
+      return true;
+    }catch(err){
+    }
+  }
+
+  return false;
+}
+
+function normalizeExternalTeaosToolName(name){
+  if(!name || (name.indexOf('/') === -1)){
+    return name;
+  }
+  const index = name.indexOf('/');
+  const packageName = name.slice(0, index);
+  if(packageName[0] !== '@'){
+    return name;
+  }
+  return packageName.slice(1) + name.slice(index);
+}
+
+teaos.set('libpath', libTeaos.makeRequirePath(cwd) + '/lib/');
 
 teaos.on('require', (name) => {
   const traces = getStackTrace();
@@ -54,6 +97,7 @@ teaos.on('require', (name) => {
 });
 
 teaos.on('declare', (desc) => {
+  teaosTool.declare(desc);
   const traces = getStackTrace();
   log_trace('declare', desc, traces);
 });
@@ -114,9 +158,23 @@ teaosTool.setRuntime({
 
 const cmd = process.argv[2] == 'desc' ? 'require' : process.argv[2];
 if(cmd){
-  loadTeaosTool(cmd);
+  if(!loadTeaosTool(cmd)){
+    loadExternalTeaosTool(cmd);
+  }
 }
-const executed = teaosTool.exec(cmd, process.argv);
+let executed = teaosTool.exec(cmd, process.argv);
+
+if((!executed) && cmd){
+  const normalizedCmd = normalizeExternalTeaosToolName(cmd);
+  if(normalizedCmd !== cmd){
+    executed = teaosTool.exec(normalizedCmd, process.argv);
+  }
+}
+
+if((!executed) && cmd && (cmd.indexOf('/') !== -1)){
+  const subCmd = cmd.slice(cmd.indexOf('/') + 1);
+  executed = teaosTool.exec(subCmd, process.argv);
+}
 
 if(!executed){
   console.log("teaos package: ", pack.version);
