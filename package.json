@@ -11,7 +11,7 @@
     "url": "git+https://github.com/tea-noma/teaos.git"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "author": "Toru Nomakuchi",
   "license": "MIT"
