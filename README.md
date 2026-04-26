@@ -52,6 +52,16 @@ teaos use.all
 
 Loads all packages discovered under `./lib`.
 
+```bash
+teaos @<package>/<tool> [...args]
+teaos <package>/<tool> [...args]
+```
+
+Loads an external CLI tool from either:
+
+- `lib/<package>/lib/extensions/teaos-tool/<tool>.js`
+- `node_modules/<package>/lib/extensions/teaos-tool/<tool>.js`
+
 ### Library API
 
 local packages (lib/{package})
