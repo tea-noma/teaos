@@ -15,6 +15,8 @@ try {
 const pack = require("../package.json");
 const fs = require('fs');
 
+const teaosTool = require('../lib/objects/teaos-tool');
+
 const reports = [];
 
 function log_trace(type, desc, traces){
@@ -30,6 +32,17 @@ function log_report(){
     }else{
       console.log(report.type, report.desc);
     }
+  }
+}
+
+function loadTeaosTool(name){
+  const toolFile = path.join(__dirname, '../lib/extensions/teaos-tool/' + name + '.js');
+  try {
+    fs.statSync(toolFile);
+    require(toolFile);
+    return true;
+  }catch(err){
+    return false;
   }
 }
 
@@ -93,35 +106,17 @@ function traces_getPackage(traces){
   return null;
 }
 
-switch(process.argv[2]){
-  case 'desc':
-  case 'require':{
-    teaos.require('@' + process.argv[3]);
-    log_report(process.argv[3]);
-    break;}
-  case 'use.all':{
-    const results = getPackages();
-    for(let i = 0; i < results.length; i++){
-      teaos.use('@' + results[i], { resources: '*' });
-    }
-    log_report(null);
-    break;}
-  case 'use':{
-    teaos.use('@' + process.argv[3], { resources: '*' });
-    log_report(process.argv[3]);
-    break;}
-  case 'require.all':{
-    const results = getPackages();
-    for(let i = 0; i < results.length; i++){
-      teaos.require('@' + results[i]);
-    }
-    log_report(null);
-    break;}
-  case 'ls':{
-    const results = getPackages();
-    console.log(results);
-    break;}
-  default:
-    console.log("teaos package: ", pack.version);
-    break;
+teaosTool.setRuntime({
+  getPackages,
+  logReport: log_report
+});
+
+const cmd = process.argv[2] == 'desc' ? 'require' : process.argv[2];
+if(cmd){
+  loadTeaosTool(cmd);
+}
+const executed = teaosTool.exec(cmd, process.argv);
+
+if(!executed){
+  console.log("teaos package: ", pack.version);
 }
