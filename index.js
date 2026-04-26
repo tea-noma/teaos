@@ -189,6 +189,60 @@ function teaos_getTools(){
   return require('./lib/objects/teaos-tool');
 }
 
+function readJsonFile(filePath){
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch(err){
+    return null;
+  }
+}
+
+function getProjectRoot(){
+  const teaosDir = path.resolve(__dirname);
+  const parts = teaosDir.split(path.sep);
+  const nodeModulesIndex = parts.lastIndexOf('node_modules');
+  if(nodeModulesIndex !== -1 && parts[nodeModulesIndex + 1] === 'teaos'){
+    return parts.slice(0, nodeModulesIndex).join(path.sep) || path.sep;
+  }
+  if(require.main && require.main.filename){
+    return path.dirname(path.resolve(require.main.filename));
+  }
+  return process.cwd();
+}
+
+function teaos_attr(name){
+  const root = getProjectRoot();
+  switch(name){
+  case 'root':
+    return root;
+  case 'name': {
+    const pkg = readJsonFile(path.join(root, 'package.json'));
+    if(pkg && pkg.name){
+      return pkg.name;
+    }
+    const teaosConfig = readJsonFile(path.join(root, 'teaos.json'));
+    if(teaosConfig && teaosConfig.name){
+      return teaosConfig.name;
+    }
+    return path.basename(root);
+  }
+  case 'path.@apps':
+    return fs.existsSync(path.join(root, 'apps')) ? './apps' : null;
+  case 'path.apps':
+    return fs.existsSync(path.join(root, 'apps')) ? path.join(root, 'apps') : null;
+  case 'path.@lib':
+    return './lib';
+  case 'path.lib':
+    return fs.existsSync(path.resolve(root, '../lib')) ? path.resolve(root, '../lib') : null;
+  case 'path.@tests':
+    return './tests';
+  case 'path.tests':
+    return fs.existsSync(path.resolve(root, '../tests')) ? path.resolve(root, '../tests') : null;
+  default:
+    return null;
+  }
+}
+
 exports.makeRequirePath = makeRequirePath;
 exports.set = teaos_set;
 exports.on = teaos_on;
@@ -197,3 +251,4 @@ exports.require = teaos_require;
 exports.use = teaos_use;
 exports.extensions = teaos_extensions;
 exports.getTools = teaos_getTools;
+exports.attr = teaos_attr;
