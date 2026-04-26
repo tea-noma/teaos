@@ -140,3 +140,42 @@ test('loads external cli tool from node_modules package extension', () => {
   assert.equal(result.status, 0);
   assert.match(result.stdout, /npm-external:ok/);
 });
+
+test('teaos.attr returns project attributes', () => {
+  const root = mkTmpDir();
+  const main = require.main;
+  const prevMainFilename = main && main.filename;
+  if(main){
+    main.filename = path.join(root, 'entry.js');
+  }
+
+  assert.equal(teaos.attr('root'), root);
+  assert.equal(teaos.attr('name'), path.basename(root));
+
+  writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'teaos-name' }));
+  assert.equal(teaos.attr('name'), 'teaos-name');
+
+  writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'pkg-name' }));
+  assert.equal(teaos.attr('name'), 'pkg-name');
+
+  assert.equal(teaos.attr('path.@apps'), null);
+  assert.equal(teaos.attr('path.apps'), null);
+  writeFile(path.join(root, 'apps/.keep'), '');
+  assert.equal(teaos.attr('path.@apps'), './apps');
+  assert.equal(teaos.attr('path.apps'), path.join(root, 'apps'));
+
+  assert.equal(teaos.attr('path.@lib'), './lib');
+  assert.equal(teaos.attr('path.lib'), null);
+  writeFile(path.resolve(root, '../lib/.keep'), '');
+  assert.equal(teaos.attr('path.lib'), path.resolve(root, '../lib'));
+
+  assert.equal(teaos.attr('path.@tests'), './tests');
+  assert.equal(teaos.attr('path.tests'), null);
+  writeFile(path.resolve(root, '../tests/.keep'), '');
+  assert.equal(teaos.attr('path.tests'), path.resolve(root, '../tests'));
+
+  assert.equal(teaos.attr('unknown'), null);
+  if(main){
+    main.filename = prevMainFilename;
+  }
+});

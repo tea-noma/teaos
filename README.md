@@ -102,6 +102,24 @@ teaos.use("@something", { resources: '*' }); // local package resources
 teaos.use("some-npm-plugin", { resources: '*' }); // npm plugin resources
 ```
 
+project attributes
+
+```javascript
+const teaos = require('teaos');
+
+teaos.attr('root'); // project directory absolute path (resolved from app entry / node_modules path)
+teaos.attr('name'); // package.json.name -> teaos.json.name -> directory name
+
+teaos.attr('path.@apps'); // "./apps" if ./apps exists
+teaos.attr('path.apps'); // absolute path of ./apps if exists
+
+teaos.attr('path.@lib'); // "./lib"
+teaos.attr('path.lib'); // absolute path of ../lib if exists
+
+teaos.attr('path.@tests'); // "./tests"
+teaos.attr('path.tests'); // absolute path of ../tests if exists
+```
+
 Deploying Rules
 ---
 
