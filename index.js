@@ -25,44 +25,99 @@ function makeRequirePath(abs){
 }
 
 function teaos_set(name, value){
-	switch(name){
-	case 'libpath':
-		libpath = value;
-		break;
-	default:
-		break;
-	}
+  switch(name){
+  case 'libpath':
+    libpath = value;
+    break;
+  default:
+    break;
+  }
 }
 
 function teaos_on(scope, handler){
-	if(!listeners[scope]){
-		listeners[scope] = [];
-	}
-	listeners[scope].push(handler);
+  if(!listeners[scope]){
+    listeners[scope] = [];
+  }
+  listeners[scope].push(handler);
 }
 
 function teaos_declare(desc){
-	const funcs = listeners["declare"];
-	if(funcs){
-		for(let i = 0; i < funcs.length; i++){
-			funcs[i].apply(null, [desc]);
-		}
-	}
+  const funcs = listeners['declare'];
+  if(funcs){
+    for(let i = 0; i < funcs.length; i++){
+      funcs[i].apply(null, [desc]);
+    }
+  }
+}
+
+function isLocalModule(name){
+  return name[0] == '@';
+}
+
+function moduleName(name){
+  return isLocalModule(name) ? name.substr(1) : name;
+}
+
+function moduleResolvePaths(){
+  const paths = [];
+  if(require.main && require.main.filename){
+    paths.push(path.dirname(require.main.filename));
+  }
+  paths.push(process.cwd());
+  paths.push(__dirname);
+  return paths;
+}
+
+function resolveLocalModulePath(name){
+  const p = path.resolve(__dirname, libpath + moduleName(name));
+  if(fs.existsSync(p)){
+    return p;
+  }
+  return null;
+}
+
+function resolveNodeModulePath(name){
+  try {
+    const pkgJson = require.resolve(moduleName(name) + '/package.json', { paths: moduleResolvePaths() });
+    return path.dirname(pkgJson);
+  } catch(err) {
+    return null;
+  }
+}
+
+function resolveNodeModuleEntry(name){
+  try {
+    return require.resolve(moduleName(name), { paths: moduleResolvePaths() });
+  } catch(err) {
+    return null;
+  }
+}
+
+function resolveTeaosModulePath(name){
+  if(isLocalModule(name)){
+    return resolveLocalModulePath(name);
+  }
+  return resolveNodeModulePath(name);
 }
 
 // load modules in statically
 function teaos_require(name){
-	if(name[0] == '@'){
-		const funcs = listeners["require"];
-		if(funcs){
-			for(let i = 0; i < funcs.length; i++){
-				funcs[i].apply(null, [name]);
-			}
-		}
-		return require(libpath + name.substr(1));
-	}else{
-		return require(name);
-	}
+  const funcs = listeners['require'];
+  if(funcs){
+    for(let i = 0; i < funcs.length; i++){
+      funcs[i].apply(null, [name]);
+    }
+  }
+
+  if(isLocalModule(name)){
+    return require(libpath + moduleName(name));
+  }
+
+  const resolved = resolveNodeModuleEntry(name);
+  if(resolved){
+    return require(resolved);
+  }
+  return require(name);
 }
 
 // load modules in dynamically
@@ -79,7 +134,7 @@ function teaos_use(name, options){
   }
   if(options && options.resources){
     const extensions = mod.__teaos.extensions;
-    if(options.resources == '*'){ // require all resources
+    if(options.resources == '*'){
       if(extensions){
         for(let k in extensions){
           teaos_require(name + '/lib/extensions/' + k);
@@ -89,7 +144,7 @@ function teaos_use(name, options){
       for(let kk in options.resources){
         if(extensions[kk]){
           if(options.resources[kk] == '*'){
-              teaos_require(name + '/lib/extensions/' + kk);
+            teaos_require(name + '/lib/extensions/' + kk);
           }else if(options.resources[kk] instanceof Object){
             for(let k in options.resources[kk]){
               teaos_require(name + '/lib/extensions/' + kk + '/' + k);
@@ -103,29 +158,31 @@ function teaos_use(name, options){
 }
 
 function teaos_extensions(name){
-  if(name[0] == '@'){
-    const results = {};
-    try {
-      const files = fs.readdirSync(path.join(__dirname, libpath + name.substr(1) + '/lib/extensions'));
-      files.forEach((file) => {
-        if(file.indexOf('.') != -1){
-          results[file] = true;
-        }else{
-          const sfiles = fs.readdirSync(path.join(__dirname, libpath + name.substr(1) + '/lib/extensions/' + file));
-          if(sfiles.length){
-            results[file] = {};
-            sfiles.forEach((sfile) => {
-              results[file][sfile] = true;
-            });
-          }
-        }
-      });
-    }catch(err){
-      console.error(err);
+  const results = {};
+  try {
+    const modpath = resolveTeaosModulePath(name);
+    if(!modpath){
+      return results;
     }
+
+    const files = fs.readdirSync(path.join(modpath, 'lib/extensions'));
+    files.forEach((file) => {
+      if(file.indexOf('.') != -1){
+        results[file] = true;
+      }else{
+        const sfiles = fs.readdirSync(path.join(modpath, 'lib/extensions/' + file));
+        if(sfiles.length){
+          results[file] = {};
+          sfiles.forEach((sfile) => {
+            results[file][sfile] = true;
+          });
+        }
+      }
+    });
+  }catch(err){
     return results;
   }
-  return null;
+  return results;
 }
 
 exports.makeRequirePath = makeRequirePath;
