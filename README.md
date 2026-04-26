@@ -1,7 +1,7 @@
 teaos (0.0.6)
 ===
 
-use local npm package
+Use local and npm package plugins with a unified runtime loader.
 
 Installation
 ---
@@ -22,6 +22,38 @@ npm install teaos
 Usage
 ---
 
+### Command line
+
+Run in your project root.
+
+```bash
+teaos
+```
+
+Prints the installed `teaos` package version.
+
+```bash
+teaos ls
+```
+
+Lists local packages found in `./lib/{package}/index.js`.
+
+```bash
+teaos require <package>
+teaos use <package>
+```
+
+Loads a local package as `@<package>` and prints trace logs (`require` / `declare`).
+
+```bash
+teaos require.all
+teaos use.all
+```
+
+Loads all packages discovered under `./lib`.
+
+### Library API
+
 local packages (lib/{package})
 
 ```javascript
@@ -29,6 +61,12 @@ const teaos = require('teaos');
 teaos.require("@something");
 ```
 
+npm package plugins
+
+```javascript
+const teaos = require('teaos');
+const plugin = teaos.require('some-npm-plugin');
+```
 
 declare component
 
@@ -46,13 +84,13 @@ teaos.on("declare", (desc) => {
 });
 ```
 
-dynamic configurable local packages
+dynamic configurable local packages / npm plugins
 
 ```javascript
 const teaos = require('teaos');
-teaos.use("@something", { resources: '*' }); // somthing/lib/extensions/* are loaded
+teaos.use("@something", { resources: '*' }); // local package resources
+teaos.use("some-npm-plugin", { resources: '*' }); // npm plugin resources
 ```
-
 
 Deploying Rules
 ---
@@ -102,7 +140,8 @@ History
 ---
 
 - version 0.0.6
-  - Bugfix: extensions resources path
+  - Add support for npm package plugins
+  - Improve CLI usage documentation
 - version 0.0.5
   - Add Theory
 - version 0.0.4
