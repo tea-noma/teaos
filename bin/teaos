@@ -107,6 +107,7 @@ function traces_getPackage(traces){
 }
 
 teaosTool.setRuntime({
+  teaos,
   getPackages,
   logReport: log_report
 });
