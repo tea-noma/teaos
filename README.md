@@ -63,6 +63,12 @@ teaos extension-types
 Scans `./lib/*/lib/extensions/*` and prints detected extension types.
 
 ```bash
+teaos attr <NAME>
+```
+
+Prints `teaos.attr(NAME)` for the current project (for example: `root`, `name`, `path.@apps`).
+
+```bash
 teaos ls --extension-type <type>
 ```
 

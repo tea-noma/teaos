@@ -165,11 +165,13 @@ test('teaos.attr returns project attributes', () => {
   assert.equal(teaos.attr('path.apps'), path.join(root, 'apps'));
 
   assert.equal(teaos.attr('path.@lib'), './lib');
+  fs.rmSync(path.resolve(root, '../lib'), { recursive: true, force: true });
   assert.equal(teaos.attr('path.lib'), null);
   writeFile(path.resolve(root, '../lib/.keep'), '');
   assert.equal(teaos.attr('path.lib'), path.resolve(root, '../lib'));
 
   assert.equal(teaos.attr('path.@tests'), './tests');
+  fs.rmSync(path.resolve(root, '../tests'), { recursive: true, force: true });
   assert.equal(teaos.attr('path.tests'), null);
   writeFile(path.resolve(root, '../tests/.keep'), '');
   assert.equal(teaos.attr('path.tests'), path.resolve(root, '../tests'));
@@ -224,4 +226,8 @@ test('supports ls/extension-types/extensions teaos tools', () => {
   const extByPkg = spawnSync(process.execPath, [teaosBin, 'extensions', '--package', 'a'], { cwd: root, encoding: 'utf-8' });
   assert.equal(extByPkg.status, 0);
   assert.match(extByPkg.stdout, /http/);
+
+  const attrLib = spawnSync(process.execPath, [teaosBin, 'attr', 'path.@lib'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(attrLib.status, 0);
+  assert.match(attrLib.stdout, /\.\/lib/);
 });
