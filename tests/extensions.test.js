@@ -179,3 +179,49 @@ test('teaos.attr returns project attributes', () => {
     main.filename = prevMainFilename;
   }
 });
+
+test('supports ls/extension-types/extensions teaos tools', () => {
+  const root = mkTmpDir();
+  const repoRoot = path.resolve(__dirname, '..');
+  const teaosRoot = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(root, 'node_modules'), { recursive: true });
+  fs.symlinkSync(repoRoot, teaosRoot, 'dir');
+  const teaosBin = path.join(teaosRoot, 'bin/teaos');
+
+  writeFile(path.join(root, 'lib/a/index.js'), 'module.exports = {};\n');
+  writeFile(path.join(root, 'lib/b/index.js'), 'module.exports = {};\n');
+  writeFile(path.join(root, 'apps/alpha/.keep'), '');
+  writeFile(path.join(root, 'apps/bravo/.keep'), '');
+  writeFile(path.join(root, 'lib/a/lib/extensions/http/get/.keep'), '');
+  writeFile(path.join(root, 'lib/a/lib/extensions/http/post/.keep'), '');
+  writeFile(path.join(root, 'lib/b/lib/extensions/ws/connect/.keep'), '');
+
+  const lsLib = spawnSync(process.execPath, [teaosBin, 'ls', 'lib'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(lsLib.status, 0);
+  assert.match(lsLib.stdout, /a/);
+
+  const lsApps = spawnSync(process.execPath, [teaosBin, 'ls', 'apps'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(lsApps.status, 0);
+  assert.match(lsApps.stdout, /alpha/);
+
+  const extTypes = spawnSync(process.execPath, [teaosBin, 'extension-types'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(extTypes.status, 0);
+  assert.match(extTypes.stdout, /http/);
+  assert.match(extTypes.stdout, /ws/);
+
+  const lsByType = spawnSync(process.execPath, [teaosBin, 'ls', '--extension-type', 'http'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(lsByType.status, 0);
+  assert.match(lsByType.stdout, /a/);
+
+  const extAll = spawnSync(process.execPath, [teaosBin, 'extensions', '--all'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(extAll.status, 0);
+  assert.match(extAll.stdout, /a.http/);
+
+  const extByType = spawnSync(process.execPath, [teaosBin, 'extensions', '--type', 'ws'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(extByType.status, 0);
+  assert.match(extByType.stdout, /b/);
+
+  const extByPkg = spawnSync(process.execPath, [teaosBin, 'extensions', '--package', 'a'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(extByPkg.status, 0);
+  assert.match(extByPkg.stdout, /http/);
+});

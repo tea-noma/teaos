@@ -39,6 +39,54 @@ teaos ls
 Lists local packages found in `./lib/{package}/index.js`.
 
 ```bash
+teaos ls -l
+```
+
+Shows detailed module info including scanned extension details for each local package under `./lib`.
+
+```bash
+teaos ls apps
+```
+
+If `./apps` exists, lists directories directly under `./apps`.
+
+```bash
+teaos ls lib
+```
+
+Same output as `teaos ls`.
+
+```bash
+teaos extension-types
+```
+
+Scans `./lib/*/lib/extensions/*` and prints detected extension types.
+
+```bash
+teaos ls --extension-type <type>
+```
+
+Lists tea modules that contain the specified extension type.
+
+```bash
+teaos extensions --all
+```
+
+Shows all discovered extensions as `<module>.<extension-type>`.
+
+```bash
+teaos extensions --type <type>
+```
+
+Shows extensions for modules matching the specified extension type.
+
+```bash
+teaos extensions --package <name>
+```
+
+Shows extensions for the specified tea module.
+
+```bash
 teaos require <package>
 teaos use <package>
 ```
