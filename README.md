@@ -111,6 +111,44 @@ teaos @<package>/<tool> [...args]
 teaos <package>/<tool> [...args]
 ```
 
+
+```bash
+teaos create app <appname>
+```
+
+Creates `apps/<appname>/teaos.json` and `apps/<appname>/index.js`.
+
+```bash
+teaos create lib <libname>
+```
+
+Creates `lib/<libname>/teaos.json` and `lib/<libname>/index.js`.
+
+```bash
+teaos install @<libname>
+```
+
+Adds a dependency to `teaos.json`.
+
+- If run inside `apps/<appname>`, updates both `apps/<appname>/teaos.json` and root `teaos.json`.
+- If run inside `lib/<libname>`, updates `lib/<libname>/teaos.json`.
+- Otherwise, updates root `teaos.json`.
+
+Dependency format in `teaos.json`:
+
+```json
+{
+  "name": "@libA",
+  "dependencies": {
+    "@libB": "*",
+    "@libC": "*",
+    "libX": "1.0.0"
+  }
+}
+```
+
+Internal modules (`@...`) are always written as `"*"`.
+
 Loads an external CLI tool from either:
 
 - `lib/<package>/lib/extensions/teaos-tool/<tool>.js`

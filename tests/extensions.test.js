@@ -231,3 +231,80 @@ test('supports ls/extension-types/extensions teaos tools', () => {
   assert.equal(attrLib.status, 0);
   assert.match(attrLib.stdout, /\.\/lib/);
 });
+
+test('supports create app/lib commands', () => {
+  const root = mkTmpDir();
+  const repoRoot = path.resolve(__dirname, '..');
+  const teaosRoot = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(root, 'node_modules'), { recursive: true });
+  fs.symlinkSync(repoRoot, teaosRoot, 'dir');
+  const teaosBin = path.join(teaosRoot, 'bin/teaos');
+
+  const createApp = spawnSync(process.execPath, [teaosBin, 'create', 'app', 'api'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(createApp.status, 0);
+  assert.equal(fs.existsSync(path.join(root, 'apps/api/teaos.json')), true);
+  assert.equal(fs.existsSync(path.join(root, 'apps/api/index.js')), true);
+
+  const createLib = spawnSync(process.execPath, [teaosBin, 'create', 'lib', 'core'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(createLib.status, 0);
+  assert.equal(fs.existsSync(path.join(root, 'lib/core/teaos.json')), true);
+  assert.equal(fs.existsSync(path.join(root, 'lib/core/index.js')), true);
+
+  const libConfig = JSON.parse(fs.readFileSync(path.join(root, 'lib/core/teaos.json'), 'utf8'));
+  assert.equal(libConfig.name, '@core');
+});
+
+test('supports install command for app and lib scopes', () => {
+  const root = mkTmpDir();
+  const repoRoot = path.resolve(__dirname, '..');
+  const teaosRoot = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(root, 'node_modules'), { recursive: true });
+  fs.symlinkSync(repoRoot, teaosRoot, 'dir');
+  const teaosBin = path.join(teaosRoot, 'bin/teaos');
+
+  writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'root', dependencies: {} }, null, 2));
+  writeFile(path.join(root, 'apps/app1/teaos.json'), JSON.stringify({ name: 'app1', dependencies: {} }, null, 2));
+  writeFile(path.join(root, 'lib/lib1/teaos.json'), JSON.stringify({ name: '@lib1', dependencies: {} }, null, 2));
+
+  const appInstall = spawnSync(process.execPath, [teaosBin, 'install', '@libX'], {
+    cwd: path.join(root, 'apps/app1'),
+    encoding: 'utf-8'
+  });
+  assert.equal(appInstall.status, 0);
+
+  const appConfig = JSON.parse(fs.readFileSync(path.join(root, 'apps/app1/teaos.json'), 'utf8'));
+  const rootConfig = JSON.parse(fs.readFileSync(path.join(root, 'teaos.json'), 'utf8'));
+  assert.equal(appConfig.dependencies['@libX'], '*');
+  assert.equal(rootConfig.dependencies['@libX'], '*');
+
+  const libInstall = spawnSync(process.execPath, [teaosBin, 'install', '@libY'], {
+    cwd: path.join(root, 'lib/lib1'),
+    encoding: 'utf-8'
+  });
+  assert.equal(libInstall.status, 0);
+
+  const libConfig = JSON.parse(fs.readFileSync(path.join(root, 'lib/lib1/teaos.json'), 'utf8'));
+  assert.equal(libConfig.dependencies['@libY'], '*');
+});
+
+
+test('install uses package.json or node_modules while searching project root', () => {
+  const root = mkTmpDir();
+  const repoRoot = path.resolve(__dirname, '..');
+  const teaosRoot = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(root, 'node_modules'), { recursive: true });
+  fs.symlinkSync(repoRoot, teaosRoot, 'dir');
+  const teaosBin = path.join(teaosRoot, 'bin/teaos');
+
+  writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'sample' }, null, 2));
+  fs.mkdirSync(path.join(root, 'src/deep'), { recursive: true });
+
+  const result = spawnSync(process.execPath, [teaosBin, 'install', 'left-pad'], {
+    cwd: path.join(root, 'src/deep'),
+    encoding: 'utf-8'
+  });
+  assert.equal(result.status, 0);
+
+  const rootConfig = JSON.parse(fs.readFileSync(path.join(root, 'teaos.json'), 'utf8'));
+  assert.equal(rootConfig.dependencies['left-pad'], '*');
+});
