@@ -22,6 +22,12 @@ function writeFile(filePath, content){
   fs.writeFileSync(filePath, content);
 }
 
+
+function writeExecutable(filePath, content){
+  writeFile(filePath, content);
+  fs.chmodSync(filePath, 0o755);
+}
+
 test('loads local lib package and detects extensions', () => {
   const root = mkTmpDir();
   const localRoot = path.join(root, 'lib/localpkg');
@@ -254,7 +260,7 @@ test('supports create app/lib commands', () => {
   assert.equal(libConfig.name, '@core');
 });
 
-test('supports install command for app and lib scopes', () => {
+test('supports install command for app/lib scopes and dependency syncing', () => {
   const root = mkTmpDir();
   const repoRoot = path.resolve(__dirname, '..');
   const teaosRoot = path.join(root, 'node_modules/teaos');
@@ -266,9 +272,14 @@ test('supports install command for app and lib scopes', () => {
   writeFile(path.join(root, 'apps/app1/teaos.json'), JSON.stringify({ name: 'app1', dependencies: {} }, null, 2));
   writeFile(path.join(root, 'lib/lib1/teaos.json'), JSON.stringify({ name: '@lib1', dependencies: {} }, null, 2));
 
+  const fakeBin = path.join(root, 'fake-bin');
+  writeExecutable(path.join(fakeBin, 'npm'), '#!/usr/bin/env node\nprocess.exit(0);\n');
+  writeExecutable(path.join(fakeBin, 'git'), '#!/usr/bin/env node\nprocess.exit(0);\n');
+
   const appInstall = spawnSync(process.execPath, [teaosBin, 'install', '@libX'], {
     cwd: path.join(root, 'apps/app1'),
-    encoding: 'utf-8'
+    encoding: 'utf-8',
+    env: { ...process.env, PATH: fakeBin + path.delimiter + process.env.PATH }
   });
   assert.equal(appInstall.status, 0);
 
@@ -279,7 +290,8 @@ test('supports install command for app and lib scopes', () => {
 
   const libInstall = spawnSync(process.execPath, [teaosBin, 'install', '@libY'], {
     cwd: path.join(root, 'lib/lib1'),
-    encoding: 'utf-8'
+    encoding: 'utf-8',
+    env: { ...process.env, PATH: fakeBin + path.delimiter + process.env.PATH }
   });
   assert.equal(libInstall.status, 0);
 
@@ -288,7 +300,7 @@ test('supports install command for app and lib scopes', () => {
 });
 
 
-test('install uses package.json or node_modules while searching project root', () => {
+test('install loads .env and resolves tea/npm dependencies recursively', () => {
   const root = mkTmpDir();
   const repoRoot = path.resolve(__dirname, '..');
   const teaosRoot = path.join(root, 'node_modules/teaos');
@@ -296,15 +308,20 @@ test('install uses package.json or node_modules while searching project root', (
   fs.symlinkSync(repoRoot, teaosRoot, 'dir');
   const teaosBin = path.join(teaosRoot, 'bin/teaos');
 
-  writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'sample' }, null, 2));
-  fs.mkdirSync(path.join(root, 'src/deep'), { recursive: true });
+  writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'root', dependencies: { '@core': '*', lodash: '*' } }, null, 2));
+  writeFile(path.join(root, '.env'), 'TEAOS_REPO=https://token.github.com/tea-noma\n');
 
-  const result = spawnSync(process.execPath, [teaosBin, 'install', 'left-pad'], {
-    cwd: path.join(root, 'src/deep'),
-    encoding: 'utf-8'
+  const fakeBin = path.join(root, 'fake-bin');
+  writeExecutable(path.join(fakeBin, 'npm'), "#!/usr/bin/env node\nconst fs=require('fs');const path=require('path');const cwd=process.cwd();const m=process.argv[3];if(m){fs.mkdirSync(path.join(cwd,'node_modules',m),{recursive:true});}process.exit(0);\n");
+  writeExecutable(path.join(fakeBin, 'git'), "#!/usr/bin/env node\nconst fs=require('fs');const path=require('path');const target=process.argv[4];fs.mkdirSync(target,{recursive:true});const name='@'+path.basename(target);fs.writeFileSync(path.join(target,'teaos.json'),JSON.stringify({name,dependencies:{chalk:'*'}},null,2));process.exit(0);\n");
+
+  const result = spawnSync(process.execPath, [teaosBin, 'install'], {
+    cwd: root,
+    encoding: 'utf-8',
+    env: { ...process.env, PATH: fakeBin + path.delimiter + process.env.PATH }
   });
   assert.equal(result.status, 0);
-
-  const rootConfig = JSON.parse(fs.readFileSync(path.join(root, 'teaos.json'), 'utf8'));
-  assert.equal(rootConfig.dependencies['left-pad'], '*');
+  assert.equal(fs.existsSync(path.join(root, 'lib/core/teaos.json')), true);
+  assert.equal(fs.existsSync(path.join(root, 'node_modules/lodash')), true);
+  assert.equal(fs.existsSync(path.join(root, 'node_modules/chalk')), true);
 });

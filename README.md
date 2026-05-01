@@ -125,14 +125,26 @@ teaos create lib <libname>
 Creates `lib/<libname>/teaos.json` and `lib/<libname>/index.js`.
 
 ```bash
-teaos install @<libname>
+teaos install [<name>|@<libname>]
 ```
 
-Adds a dependency to `teaos.json`.
+Adds/synchronizes dependencies for the current scope (`project root`, `apps/<appname>`, `lib/<libname>`).
 
-- If run inside `apps/<appname>`, updates both `apps/<appname>/teaos.json` and root `teaos.json`.
-- If run inside `lib/<libname>`, updates `lib/<libname>/teaos.json`.
-- Otherwise, updates root `teaos.json`.
+- `teaos install @<libname>`
+  - Adds `@<libname>: "*"` to scoped `teaos.json`.
+  - If current scope is `apps/<appname>`, also adds the same entry to root `teaos.json`.
+  - If `TEAOS_REPO` is set (loaded from root `.env` when present) and `lib/<libname>` is missing, clones `<TEAOS_REPO>/<libname>.git` into `lib/<libname>`.
+- `teaos install <name>`
+  - Adds `<name>: "*"` to scoped `teaos.json`.
+  - Runs npm-style install for the root project (`npm install <name>`), with `node_modules` handled only at project root.
+- `teaos install` (no args)
+  - Verifies and reconciles `dependencies` and local modules in the current scope.
+
+Recursive verification:
+
+- Newly loaded `lib/*/teaos.json` files are read recursively.
+- Internal deps (`@...`) are checked against `lib/*` and loaded from `TEAOS_REPO` when available.
+- npm deps are checked in root `node_modules`, and missing packages are installed.
 
 Dependency format in `teaos.json`:
 
