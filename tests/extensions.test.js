@@ -260,6 +260,57 @@ test('supports create app/lib commands', () => {
   assert.equal(libConfig.name, '@core');
 });
 
+test('supports install/uninstall lib/<name> aliases', () => {
+  const root = mkTmpDir();
+  const repoRoot = path.resolve(__dirname, '..');
+  const teaosRoot = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(root, 'node_modules'), { recursive: true });
+  fs.symlinkSync(repoRoot, teaosRoot, 'dir');
+  const teaosBin = path.join(teaosRoot, 'bin/teaos');
+
+  writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'root', dependencies: {} }, null, 2));
+
+  const installAlias = spawnSync(process.execPath, [teaosBin, 'install', 'lib/core'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(installAlias.status, 0);
+  const installed = JSON.parse(fs.readFileSync(path.join(root, 'teaos.json'), 'utf8'));
+  assert.equal(installed.dependencies['@core'], '*');
+
+  const uninstallAlias = spawnSync(process.execPath, [teaosBin, 'uninstall', 'lib/core'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(uninstallAlias.status, 0);
+  const uninstalled = JSON.parse(fs.readFileSync(path.join(root, 'teaos.json'), 'utf8'));
+  assert.equal(uninstalled.dependencies['@core'], undefined);
+});
+
+test('supports install apps/<name> with APPS_REPO_PREFIX', () => {
+  const base = mkTmpDir();
+  const root = path.join(base, 'workspace');
+  const remoteBase = path.join(base, 'remote');
+  fs.mkdirSync(root, { recursive: true });
+  fs.mkdirSync(remoteBase, { recursive: true });
+  const repoRoot = path.resolve(__dirname, '..');
+  const teaosRoot = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(root, 'node_modules'), { recursive: true });
+  fs.symlinkSync(repoRoot, teaosRoot, 'dir');
+  const teaosBin = path.join(teaosRoot, 'bin/teaos');
+
+  writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'root', dependencies: {} }, null, 2));
+
+  const remoteApp = path.join(remoteBase, 'app-sample.git');
+  spawnSync('git', ['init', '--bare', remoteApp], { encoding: 'utf-8' });
+
+  const installApp = spawnSync(process.execPath, [teaosBin, 'install', 'apps/sample'], {
+    cwd: root,
+    encoding: 'utf-8',
+    env: {
+      ...process.env,
+      TEAOS_REPO: 'file://' + remoteBase,
+      APPS_REPO_PREFIX: 'app-'
+    }
+  });
+  assert.equal(installApp.status, 0);
+  assert.equal(fs.existsSync(path.join(root, 'apps/sample/.git')), true);
+});
+
 test('supports install command for app/lib scopes and dependency syncing', () => {
   const root = mkTmpDir();
   const repoRoot = path.resolve(__dirname, '..');
