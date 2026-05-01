@@ -133,12 +133,24 @@ Adds/synchronizes dependencies for the current scope (`project root`, `apps/<app
 - `teaos install @<libname>`
   - Adds `@<libname>: "*"` to scoped `teaos.json`.
   - If current scope is `apps/<appname>`, also adds the same entry to root `teaos.json`.
-  - If `TEAOS_REPO` is set (loaded from root `.env` when present) and `lib/<libname>` is missing, clones `<TEAOS_REPO>/<libname>.git` into `lib/<libname>`.
+  - If `TEAOS_REPO` is set (loaded from root `.env` when present) and `lib/<libname>` is missing, clones `<TEAOS_REPO>/<TEAOS_REPO_PREFIX><libname>.git` into `lib/<libname>`.
+  - `TEAOS_REPO_PREFIX` is optional (defaults to empty string when undefined).
 - `teaos install <name>`
   - Adds `<name>: "*"` to scoped `teaos.json`.
   - Runs npm-style install for the root project (`npm install <name>`), with `node_modules` handled only at project root.
 - `teaos install` (no args)
   - Verifies and reconciles `dependencies` and local modules in the current scope.
+
+
+```bash
+teaos uninstall <name|@libname>
+```
+
+Removes the dependency key from `dependencies` in the current scope's `teaos.json`.
+
+- In `apps/<appname>` scope, also removes the same key from root `teaos.json`.
+- In `lib/<libname>` scope, updates only that lib's `teaos.json`.
+- Does **not** delete `lib/<name>` directories or `node_modules` entries.
 
 Recursive verification:
 
