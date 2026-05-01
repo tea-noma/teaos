@@ -309,11 +309,11 @@ test('install loads .env and resolves tea/npm dependencies recursively', () => {
   const teaosBin = path.join(teaosRoot, 'bin/teaos');
 
   writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'root', dependencies: { '@core': '*', lodash: '*' } }, null, 2));
-  writeFile(path.join(root, '.env'), 'TEAOS_REPO=https://token.github.com/tea-noma\n');
+  writeFile(path.join(root, '.env'), 'TEAOS_REPO=https://token.github.com/tea-noma\nTEAOS_REPO_PREFIX=team-\n');
 
   const fakeBin = path.join(root, 'fake-bin');
   writeExecutable(path.join(fakeBin, 'npm'), "#!/usr/bin/env node\nconst fs=require('fs');const path=require('path');const cwd=process.cwd();const m=process.argv[3];if(m){fs.mkdirSync(path.join(cwd,'node_modules',m),{recursive:true});}process.exit(0);\n");
-  writeExecutable(path.join(fakeBin, 'git'), "#!/usr/bin/env node\nconst fs=require('fs');const path=require('path');const target=process.argv[4];fs.mkdirSync(target,{recursive:true});const name='@'+path.basename(target);fs.writeFileSync(path.join(target,'teaos.json'),JSON.stringify({name,dependencies:{chalk:'*'}},null,2));process.exit(0);\n");
+  writeExecutable(path.join(fakeBin, 'git'), "#!/usr/bin/env node\nconst fs=require('fs');const path=require('path');const target=process.argv[4];const remote=process.argv[3];fs.mkdirSync(target,{recursive:true});const name='@'+path.basename(target);fs.writeFileSync(path.join(target,'teaos.json'),JSON.stringify({name,dependencies:{chalk:'*'}},null,2));fs.writeFileSync(path.join(process.cwd(),'git-remote.txt'),remote);process.exit(0);\n");
 
   const result = spawnSync(process.execPath, [teaosBin, 'install'], {
     cwd: root,
@@ -324,4 +324,36 @@ test('install loads .env and resolves tea/npm dependencies recursively', () => {
   assert.equal(fs.existsSync(path.join(root, 'lib/core/teaos.json')), true);
   assert.equal(fs.existsSync(path.join(root, 'node_modules/lodash')), true);
   assert.equal(fs.existsSync(path.join(root, 'node_modules/chalk')), true);
+
+  assert.equal(fs.readFileSync(path.join(root, 'git-remote.txt'), 'utf8'), 'https://token.github.com/tea-noma/team-core.git');
+});
+
+
+test('supports uninstall command for app/lib scopes without removing lib directory', () => {
+  const root = mkTmpDir();
+  const repoRoot = path.resolve(__dirname, '..');
+  const teaosRoot = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(root, 'node_modules'), { recursive: true });
+  fs.symlinkSync(repoRoot, teaosRoot, 'dir');
+  const teaosBin = path.join(teaosRoot, 'bin/teaos');
+
+  writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'root', dependencies: { '@libX': '*', lodash: '*' } }, null, 2));
+  writeFile(path.join(root, 'apps/app1/teaos.json'), JSON.stringify({ name: 'app1', dependencies: { '@libX': '*', lodash: '*' } }, null, 2));
+  writeFile(path.join(root, 'lib/lib1/teaos.json'), JSON.stringify({ name: '@lib1', dependencies: { '@libY': '*' } }, null, 2));
+  writeFile(path.join(root, 'lib/libX/index.js'), 'module.exports = {};\n');
+
+  const appUninstall = spawnSync(process.execPath, [teaosBin, 'uninstall', '@libX'], { cwd: path.join(root, 'apps/app1'), encoding: 'utf-8' });
+  assert.equal(appUninstall.status, 0);
+
+  const appConfig = JSON.parse(fs.readFileSync(path.join(root, 'apps/app1/teaos.json'), 'utf8'));
+  const rootConfig = JSON.parse(fs.readFileSync(path.join(root, 'teaos.json'), 'utf8'));
+  assert.equal(appConfig.dependencies['@libX'], undefined);
+  assert.equal(rootConfig.dependencies['@libX'], undefined);
+  assert.equal(fs.existsSync(path.join(root, 'lib/libX')), true);
+
+  const libUninstall = spawnSync(process.execPath, [teaosBin, 'uninstall', '@libY'], { cwd: path.join(root, 'lib/lib1'), encoding: 'utf-8' });
+  assert.equal(libUninstall.status, 0);
+
+  const libConfig = JSON.parse(fs.readFileSync(path.join(root, 'lib/lib1/teaos.json'), 'utf8'));
+  assert.equal(libConfig.dependencies['@libY'], undefined);
 });
