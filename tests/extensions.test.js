@@ -357,3 +357,34 @@ test('supports uninstall command for app/lib scopes without removing lib directo
   const libConfig = JSON.parse(fs.readFileSync(path.join(root, 'lib/lib1/teaos.json'), 'utf8'));
   assert.equal(libConfig.dependencies['@libY'], undefined);
 });
+
+test('supports init command and seeds teaos.json from package.json', () => {
+  const root = mkTmpDir();
+  const repoRoot = path.resolve(__dirname, '..');
+  const teaosRoot = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(root, 'node_modules'), { recursive: true });
+  fs.symlinkSync(repoRoot, teaosRoot, 'dir');
+  const teaosBin = path.join(teaosRoot, 'bin/teaos');
+
+  writeFile(path.join(root, 'package.json'), JSON.stringify({
+    name: 'sample-project',
+    dependencies: {
+      leftpad: '^1.0.0'
+    }
+  }, null, 2));
+
+  const init = spawnSync(process.execPath, [teaosBin, 'init'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(init.status, 0);
+
+  const config = JSON.parse(fs.readFileSync(path.join(root, 'teaos.json'), 'utf8'));
+  assert.equal(config.name, 'sample-project');
+  assert.deepEqual(config.dependencies, { leftpad: '^1.0.0' });
+
+  writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'keep', dependencies: { kept: '*' } }, null, 2));
+  const initNoop = spawnSync(process.execPath, [teaosBin, 'init'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(initNoop.status, 0);
+
+  const unchanged = JSON.parse(fs.readFileSync(path.join(root, 'teaos.json'), 'utf8'));
+  assert.equal(unchanged.name, 'keep');
+  assert.deepEqual(unchanged.dependencies, { kept: '*' });
+});
