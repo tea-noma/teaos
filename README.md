@@ -126,6 +126,8 @@ Creates `lib/<libname>/teaos.json` and `lib/<libname>/index.js`.
 
 ```bash
 teaos install [<name>|@<libname>]
+teaos install lib/<libname>
+teaos install apps/<appname>
 ```
 
 ```bash
@@ -149,18 +151,28 @@ Adds/synchronizes dependencies for the current scope (`project root`, `apps/<app
 - `teaos install <name>`
   - Adds `<name>: "*"` to scoped `teaos.json`.
   - Runs npm-style install for the root project (`npm install <name>`), with `node_modules` handled only at project root.
+- `teaos install lib/<libname>`
+  - Alias for `teaos install @<libname>`.
+- `teaos install apps/<appname>`
+  - Installs an application repository into `./apps/<appname>` (if not already present).
+  - Uses `<TEAOS_REPO>/<APPS_REPO_PREFIX><appname>.git` as clone URL.
+  - `APPS_REPO_PREFIX` is optional (defaults to empty string when undefined).
 - `teaos install` (no args)
   - Verifies and reconciles `dependencies` and local modules in the current scope.
 
 
 ```bash
 teaos uninstall <name|@libname>
+teaos uninstall lib/<libname>
+teaos uninstall apps/<appname>
 ```
 
 Removes the dependency key from `dependencies` in the current scope's `teaos.json`.
 
 - In `apps/<appname>` scope, also removes the same key from root `teaos.json`.
 - In `lib/<libname>` scope, updates only that lib's `teaos.json`.
+- `teaos uninstall lib/<libname>` is an alias for uninstalling `@<libname>`.
+- `teaos uninstall apps/<appname>` is currently not supported (no-op).
 - Does **not** delete `lib/<name>` directories or `node_modules` entries.
 
 Recursive verification:
