@@ -128,6 +128,17 @@ Creates `lib/<libname>/teaos.json` and `lib/<libname>/index.js`.
 teaos install [<name>|@<libname>]
 ```
 
+```bash
+teaos init
+```
+
+Initializes `teaos.json` in the current project root (similar to `npm init` for teaos metadata).
+
+- If `teaos.json` already exists, the command makes no changes.
+- If `teaos.json` does not exist, it is created with:
+  - `name`: copied from `package.json.name` when available (otherwise directory name)
+  - `dependencies`: copied from `package.json.dependencies` when available (otherwise `{}`)
+
 Adds/synchronizes dependencies for the current scope (`project root`, `apps/<appname>`, `lib/<libname>`).
 
 - `teaos install @<libname>`
