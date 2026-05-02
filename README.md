@@ -1,7 +1,16 @@
-teaos (0.0.6)
+teaos (0.0.7)
 ===
 
 Use local and npm package plugins with a unified runtime loader.
+
+
+Changelog
+---
+
+### 0.0.7 (2026-05-02)
+
+- Added CLI commands `teaos dependencies` and `teaos dependencies-local` to inspect traced dependency results from `teaos.json`.
+- Documented recursive API usage for dependency tracing: `teaos.dependencies(lpath, {recursive: true})` and `teaos.localDependencies(lpath, {recursive: true})`.
 
 Installation
 ---
@@ -175,6 +184,16 @@ Removes the dependency key from `dependencies` in the current scope's `teaos.jso
 - `teaos uninstall apps/<appname>` is currently not supported (no-op).
 - Does **not** delete `lib/<name>` directories or `node_modules` entries.
 
+```bash
+teaos dependencies
+teaos dependencies-local
+```
+
+Prints traced dependency sets for the current project scope:
+
+- `teaos dependencies` shows all dependency package names (local and npm).
+- `teaos dependencies-local` shows only local dependency names (`@...`).
+
 Recursive verification:
 
 - Newly loaded `lib/*/teaos.json` files are read recursively.
@@ -241,6 +260,18 @@ teaos.use("@something", { resources: '*' }); // local package resources
 teaos.use("some-npm-plugin", { resources: '*' }); // npm plugin resources
 ```
 
+dependency trace API
+
+```javascript
+const teaos = require('teaos');
+
+teaos.dependencies(lpath, { recursive: true });
+teaos.localDependencies(lpath, { recursive: true });
+```
+
+- `lpath`: path to scan (for example, `./lib` or `./apps`).
+- `recursive: true`: recursively reads discovered `teaos.json` files and returns accumulated dependencies.
+
 project attributes
 
 ```javascript
@@ -306,6 +337,9 @@ Theory
 History
 ---
 
+- version 0.0.7
+  - Add `teaos dependencies` and `teaos dependencies-local` commands
+  - Add recursive dependency API examples: `teaos.dependencies(lpath, {recursive: true})`, `teaos.localDependencies(lpath, {recursive: true})`
 - version 0.0.6
   - Add support for npm package plugins
   - Improve CLI usage documentation

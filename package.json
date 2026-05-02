@@ -1,6 +1,6 @@
 {
   "name": "teaos",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "local package, component, and npm plugin manager",
   "bin": {
     "teaos": "./bin/teaos"
