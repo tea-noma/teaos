@@ -453,6 +453,8 @@ test('supports dependency tracing API and cli tools', () => {
     dependencies: { '@core': '*', 'npkg': '^1.0.0' }
   }, null, 2));
 
+  writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'project' }, null, 2));
+
   writeFile(path.join(root, 'lib/core/teaos.json'), JSON.stringify({
     name: '@core',
     dependencies: { '@util': '*', 'other': '*' }
@@ -484,6 +486,16 @@ test('supports dependency tracing API and cli tools', () => {
 
   const localsRecursive = teaos.localDependencies(root, { recursive: true });
   assert.deepEqual(localsRecursive.sort(), ['@core', '@util']);
+
+
+  writeFile(path.join(root, 'apps/app1/teaos.json'), JSON.stringify({
+    name: 'app1',
+    dependencies: { 'npkg': '^1.0.0' }
+  }, null, 2));
+
+  const appDepsRecursive = teaos.dependencies(path.join(root, 'apps/app1'), { recursive: true });
+  assert.equal(appDepsRecursive.includes('npkg'), true);
+  assert.equal(appDepsRecursive.includes('@util'), true);
 
   const cliDeps = spawnSync(process.execPath, [teaosBin, 'dependencies'], { cwd: root, encoding: 'utf-8' });
   assert.equal(cliDeps.status, 0);
