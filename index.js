@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const listeners = {};
 
+const { dependencyTrace } = require('./lib/objects/dependency-trace');
+
 let libpath = '../../lib/';
 
 function makeRequirePath(abs){
@@ -189,6 +191,14 @@ function teaos_getTools(){
   return require('./lib/objects/teaos-tool');
 }
 
+function teaos_dependencies(lpath, options){
+  return dependencyTrace(lpath, options).allDependencies;
+}
+
+function teaos_localDependencies(lpath, options){
+  return dependencyTrace(lpath, options).allLocalDependencies;
+}
+
 function readJsonFile(filePath){
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -251,4 +261,6 @@ exports.require = teaos_require;
 exports.use = teaos_use;
 exports.extensions = teaos_extensions;
 exports.getTools = teaos_getTools;
+exports.dependencies = teaos_dependencies;
+exports.localDependencies = teaos_localDependencies;
 exports.attr = teaos_attr;

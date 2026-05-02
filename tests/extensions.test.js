@@ -439,3 +439,63 @@ test('supports init command and seeds teaos.json from package.json', () => {
   assert.equal(unchanged.name, 'keep');
   assert.deepEqual(unchanged.dependencies, { kept: '*' });
 });
+
+test('supports dependency tracing API and cli tools', () => {
+  const root = mkTmpDir();
+  const repoRoot = path.resolve(__dirname, '..');
+  const teaosRoot = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(root, 'node_modules'), { recursive: true });
+  fs.symlinkSync(repoRoot, teaosRoot, 'dir');
+  const teaosBin = path.join(teaosRoot, 'bin/teaos');
+
+  writeFile(path.join(root, 'teaos.json'), JSON.stringify({
+    name: 'project',
+    dependencies: { '@core': '*', 'npkg': '^1.0.0' }
+  }, null, 2));
+
+  writeFile(path.join(root, 'lib/core/teaos.json'), JSON.stringify({
+    name: '@core',
+    dependencies: { '@util': '*', 'other': '*' }
+  }, null, 2));
+
+  writeFile(path.join(root, 'lib/util/teaos.json'), JSON.stringify({
+    name: '@util',
+    dependencies: {}
+  }, null, 2));
+
+  writeFile(path.join(root, 'node_modules/npkg/teaos.json'), JSON.stringify({
+    name: 'npkg',
+    dependencies: { '@util': '*' }
+  }, null, 2));
+
+  writeFile(path.join(root, 'node_modules/other/teaos.json'), JSON.stringify({
+    name: 'other',
+    dependencies: {}
+  }, null, 2));
+
+  assert.deepEqual(teaos.dependencies(root), ['@core', 'npkg']);
+  assert.deepEqual(teaos.localDependencies(root), ['@core']);
+
+  const depsRecursive = teaos.dependencies(root, { recursive: true });
+  assert.equal(depsRecursive.includes('@core'), true);
+  assert.equal(depsRecursive.includes('npkg'), true);
+  assert.equal(depsRecursive.includes('@util'), true);
+  assert.equal(depsRecursive.includes('other'), true);
+
+  const localsRecursive = teaos.localDependencies(root, { recursive: true });
+  assert.deepEqual(localsRecursive.sort(), ['@core', '@util']);
+
+  const cliDeps = spawnSync(process.execPath, [teaosBin, 'dependencies'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(cliDeps.status, 0);
+  assert.match(cliDeps.stdout, /@core/);
+  assert.doesNotMatch(cliDeps.stdout, /other/);
+
+  const cliDepsAll = spawnSync(process.execPath, [teaosBin, 'dependencies', '-a'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(cliDepsAll.status, 0);
+  assert.match(cliDepsAll.stdout, /other/);
+
+  const cliLocals = spawnSync(process.execPath, [teaosBin, 'dependencies-local', '-a'], { cwd: root, encoding: 'utf-8' });
+  assert.equal(cliLocals.status, 0);
+  assert.match(cliLocals.stdout, /@util/);
+  assert.doesNotMatch(cliLocals.stdout, /npkg/);
+});
