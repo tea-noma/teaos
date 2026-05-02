@@ -2,18 +2,33 @@
 const path = require('path');
 const cwd = process.cwd();
 
+function findProjectRoot(startDir){
+  let current = path.resolve(startDir);
+  while(true){
+    if(fs.existsSync(path.join(current, 'package.json'))){
+      return current;
+    }
+    const parent = path.dirname(current);
+    if(parent === current){
+      return startDir;
+    }
+    current = parent;
+  }
+}
+
+const fs = require('fs');
 const libTeaos = require("..");
+const projectRoot = findProjectRoot(cwd);
 let teaos = null;
 
 try {
-  teaos = require(path.join('../' + libTeaos.makeRequirePath(cwd), 'node_modules/teaos'));
+  teaos = require(path.join('../' + libTeaos.makeRequirePath(projectRoot), 'node_modules/teaos'));
 }catch(err){
   console.error(err);
   teaos = libTeaos;
 }
 
 const pack = require("../package.json");
-const fs = require('fs');
 
 const teaosTool = require('../lib/objects/teaos-tool');
 
@@ -61,8 +76,8 @@ function loadExternalTeaosTool(name){
   }
 
   const candidates = [
-    path.join(cwd, 'lib', localPackageName, 'lib/extensions/teaos-tool', toolName + '.js'),
-    path.join(cwd, 'node_modules', localPackageName, 'lib/extensions/teaos-tool', toolName + '.js')
+    path.join(projectRoot, 'lib', localPackageName, 'lib/extensions/teaos-tool', toolName + '.js'),
+    path.join(projectRoot, 'node_modules', localPackageName, 'lib/extensions/teaos-tool', toolName + '.js')
   ];
 
   for(let i = 0; i < candidates.length; i++){
@@ -89,7 +104,7 @@ function normalizeExternalTeaosToolName(name){
   return packageName.slice(1) + name.slice(index);
 }
 
-teaos.set('libpath', libTeaos.makeRequirePath(cwd) + '/lib/');
+teaos.set('libpath', libTeaos.makeRequirePath(projectRoot) + '/lib/');
 
 teaos.on('require', (name) => {
   const traces = getStackTrace();
@@ -105,10 +120,10 @@ teaos.on('declare', (desc) => {
 function getPackages(){
   const results = [];
   try {
-    const files = fs.readdirSync("./lib");
+    const files = fs.readdirSync(path.join(projectRoot, 'lib'));
     for(let i = 0; i < files.length; i++){
       try {
-        fs.statSync("./lib/" + files[i] + "/index.js");
+        fs.statSync(path.join(projectRoot, 'lib', files[i], 'index.js'));
         results.push(files[i]);
       }catch(err){
       }
@@ -128,9 +143,9 @@ function getStackTrace(){
     while(m = regex.exec(stack)){
       let callerName = (m != null) ? m[1] || m[2] : 'NONE';
       let trace = {name: callerName, path: m[3], line: m[4], offset: m[5]};
-      if(trace.path.substr(0, cwd.length) == cwd){
+      if(trace.path.substr(0, projectRoot.length) == projectRoot){
         trace.type = 'in-project';
-        trace.rel = trace.path.substr(cwd.length + 1).replace(/\\/g, '/');
+        trace.rel = trace.path.substr(projectRoot.length + 1).replace(/\\/g, '/');
         if(trace.rel.substr(0, 4) == 'lib/'){
 
         }
