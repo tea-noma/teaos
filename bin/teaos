@@ -112,9 +112,14 @@ teaos.on('require', (name) => {
 });
 
 teaos.on('declare', (desc) => {
-  teaosTool.declare(desc);
   const traces = getStackTrace();
   log_trace('declare', desc, traces);
+});
+
+libTeaos.on('declare', (desc) => {
+  if(desc.type == 'teaos-tool'){
+    teaosTool.declare(desc);
+  }
 });
 
 function getPackages(){
