@@ -1,4 +1,4 @@
-teaos (0.0.7)
+teaos (0.0.8)
 ===
 
 Use local and npm package plugins with a unified runtime loader.
@@ -337,6 +337,8 @@ Theory
 History
 ---
 
+- version 0.0.8
+  - Stable commandline
 - version 0.0.7
   - Add `teaos dependencies` and `teaos dependencies-local` commands
   - Add recursive dependency API examples: `teaos.dependencies(lpath, {recursive: true})`, `teaos.localDependencies(lpath, {recursive: true})`
