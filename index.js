@@ -247,7 +247,53 @@ function findResourceProjectRoot(start){
   }
 }
 
-function scanResourcesIntoMap(results, packageRoot, keyPrefix){
+function normalizeResourceDependencies(value){
+  if(!value){
+    return [];
+  }
+  if(Array.isArray(value)){
+    return value;
+  }
+  if(typeof value === 'object'){
+    return Object.keys(value);
+  }
+  return [value];
+}
+
+function normalizeResourceOptions(lpath, options){
+  if(lpath && (typeof lpath === 'object') && !Array.isArray(lpath)){
+    return Object.assign({}, lpath);
+  }
+
+  const normalized = Object.assign({}, options || {});
+  if(lpath){
+    normalized.cwd = lpath;
+  }
+  return normalized;
+}
+
+function addResourceResult(results, key, value, multi){
+  if(!multi){
+    if(!results.has(key)){
+      results.set(key, value);
+    }
+    return;
+  }
+
+  if(!results.has(key)){
+    results.set(key, [value]);
+    return;
+  }
+
+  const current = results.get(key);
+  if(Array.isArray(current)){
+    current.push(value);
+  }else{
+    results.set(key, [current, value]);
+  }
+}
+
+function scanResourcesIntoMap(results, packageRoot, keyPrefix, options){
   let entries = [];
   try {
     entries = fs.readdirSync(path.join(packageRoot, keyPrefix || ''));
@@ -265,43 +311,47 @@ function scanResourcesIntoMap(results, packageRoot, keyPrefix){
     } catch(err){
       continue;
     }
-    if(stat.isDirectory()){
-      scanResourcesIntoMap(results, packageRoot, key);
-    }else if(stat.isFile() && !results.has(key)){
-      results.set(key, './' + path.relative(process.cwd(), abs).replace(/\\/g, '/'));
+    if(stat.isDirectory() && options.recursive){
+      scanResourcesIntoMap(results, packageRoot, key, options);
+    }else if(stat.isFile()){
+      addResourceResult(
+        results,
+        key,
+        './' + path.relative(options.cwd, abs).replace(/\\/g, '/'),
+        options.multi
+      );
     }
   }
 }
 
 function teaos_resources(lpath, options){
-  let start = lpath;
-  let filterPath = options && options.path;
-
-  if(lpath && (typeof lpath === 'object')){
-    start = null;
-    filterPath = lpath.path;
-  }
-
-  const prefixEnv = process.env.TEAOS_RESOURCE_PREFIXS || '';
-  const prefixes = prefixEnv.split(',').map((value) => value.trim()).filter((value) => value.length);
   const results = new Map();
-  if(!prefixes.length){
+
+  const resourceOptions = normalizeResourceOptions(lpath, options);
+  const cwd = path.resolve(resourceOptions.cwd || process.cwd());
+  const prefixes = Array.isArray(resourceOptions.teaosResourcePrefixs) ? resourceOptions.teaosResourcePrefixs : [];
+  const selectedDependencies = normalizeResourceDependencies(resourceOptions.dependencies);
+  if(!selectedDependencies.length && !prefixes.length){
     return results;
   }
 
-  const scopeRoot = findNearestConfigRoot(start || process.cwd());
+  const scopeRoot = findNearestConfigRoot(cwd);
   const projectRoot = findResourceProjectRoot(scopeRoot);
-  const deps = teaos_localDependencies(scopeRoot, { recursive: true });
-  const normalizedFilter = normalizeResourcePath(filterPath);
+  const normalizedFilter = normalizeResourcePath(resourceOptions.path);
+  const deps = selectedDependencies.length ? selectedDependencies : teaos_localDependencies(scopeRoot, { recursive: true });
 
   for(let i = deps.length - 1; i >= 0; i--){
     const depName = deps[i];
-    if(!resourcePrefixMatches(depName, prefixes)){
+    if(!selectedDependencies.length && !resourcePrefixMatches(depName, prefixes)){
       continue;
     }
     const localName = depName[0] === '@' ? depName.slice(1) : depName;
     const resourceRoot = path.join(projectRoot, 'lib', localName, 'resources');
-    scanResourcesIntoMap(results, resourceRoot, normalizedFilter);
+    scanResourcesIntoMap(results, resourceRoot, normalizedFilter, {
+      cwd,
+      multi: !!resourceOptions.multi,
+      recursive: !!resourceOptions.recursive
+    });
   }
 
   return results;
