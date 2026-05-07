@@ -66,10 +66,10 @@ teaos ls lib
 Same output as `teaos ls`.
 
 ```bash
-teaos ls resources [PATH]
+teaos ls resources [PATH] [-r]
 ```
 
-Prints `teaos.resources({ path: PATH })`.
+Prints `teaos.resources({ path: PATH, recursive: true })` when `-r` is specified. The command reads comma-separated `TEAOS_RESOURCE_PREFIXS` and passes it to the API as `teaosResourcePrefixs`.
 
 ```bash
 teaos extension-types
@@ -283,10 +283,17 @@ integrated resources API
 ```javascript
 const teaos = require('teaos');
 
-const resources = teaos.resources();
+const resources = teaos.resources({
+  teaosResourcePrefixs: ['tea-'],
+  recursive: true
+});
 ```
 
-When `TEAOS_RESOURCE_PREFIXS` is set, `teaos.resources()` scans local packages returned by `teaos.localDependencies(currentScope, { recursive: true })` whose package name matches one of the comma-separated prefixes. Each matched package contributes files under `lib/<package>/resources` into one `Map`.
+`teaos.resources(options)` scans local package `resources` directories and returns one `Map`. The API does not read environment variables. Pass prefixes with `options.teaosResourcePrefixs`.
+
+When `options.dependencies` is not specified, `teaos.resources()` scans local packages returned by `teaos.localDependencies(currentScope, { recursive: true })` whose package name matches one of the prefixes in `options.teaosResourcePrefixs`. Each matched package contributes files under `lib/<package>/resources` into one `Map`.
+
+When `options.dependencies` is specified, resources are read from those packages instead of using the prefix-filtered local dependency list.
 
 Map keys are resource paths relative to the package `resources` directory. Map values are project-relative file paths to the real files.
 
@@ -304,7 +311,20 @@ Map({
 })
 ```
 
-If multiple packages provide the same resource key, packages later in `localDependencies(..., { recursive: true })` take priority. Use `teaos.resources({ path: "lib/AAA" })` or `teaos ls resources lib/AAA` to scan only one subtree.
+By default, resource scanning is non-recursive and reads only the directory specified by `options.path` (or the package `resources` root when omitted), similar to `fs.readdirSync()`. Set `options.recursive: true` to scan subdirectories recursively. This option controls resource directory traversal only; it is separate from the recursive dependency trace used to discover local dependencies.
+
+If multiple packages provide the same resource key, packages later in `localDependencies(..., { recursive: true })` take priority. Use `teaos.resources({ path: "lib/AAA", recursive: true })` or `teaos ls resources lib/AAA -r` to scan one subtree recursively.
+
+Set `options.multi: true` to preserve all colliding resource entries:
+
+```javascript
+Map({
+  "aaa.js": [
+    "./lib/AAA/resources/aaa.js",
+    "./lib/BBB/resources/aaa.js"
+  ]
+})
+```
 
 project attributes
 

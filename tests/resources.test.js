@@ -44,24 +44,42 @@ test('supports resource tree API and ls resources command', () => {
     dependencies: {}
   }, null, 2));
   writeFile(path.join(root, 'lib/tea-alpha/resources/lib/alpha/x.js'), 'alpha\n');
+  writeFile(path.join(root, 'lib/tea-alpha/resources/lib/alpha/root.js'), 'alpha root\n');
   writeFile(path.join(root, 'lib/tea-alpha/resources/lib/shared.js'), 'alpha shared\n');
+  writeFile(path.join(root, 'lib/tea-alpha/resources/top.js'), 'alpha top\n');
   writeFile(path.join(root, 'lib/tea-bravo/resources/lib/bravo/y.js'), 'bravo\n');
   writeFile(path.join(root, 'lib/tea-bravo/resources/lib/shared.js'), 'bravo shared\n');
+  writeFile(path.join(root, 'lib/tea-bravo/resources/top.js'), 'bravo top\n');
   writeFile(path.join(root, 'lib/other/resources/lib/other/z.js'), 'other\n');
 
   process.chdir(root);
-  process.env.TEAOS_RESOURCE_PREFIXS = 'tea-';
+  process.env.TEAOS_RESOURCE_PREFIXS = 'other';
   try {
-    const resources = teaos.resources();
+    assert.deepEqual(Array.from(teaos.resources().keys()), []);
+
+    const directResources = teaos.resources({ teaosResourcePrefixs: ['tea-'] });
+    assert.equal(directResources.get('top.js'), './lib/tea-bravo/resources/top.js');
+    assert.equal(directResources.has('lib/shared.js'), false);
+
+    const resources = teaos.resources({ teaosResourcePrefixs: ['tea-'], recursive: true });
     assert.equal(resources.get('lib/alpha/x.js'), './lib/tea-alpha/resources/lib/alpha/x.js');
     assert.equal(resources.get('lib/bravo/y.js'), './lib/tea-bravo/resources/lib/bravo/y.js');
     assert.equal(resources.get('lib/shared.js'), './lib/tea-bravo/resources/lib/shared.js');
     assert.equal(resources.has('lib/other/z.js'), false);
 
-    const filtered = teaos.resources({ path: 'lib/bravo' });
+    const multiResources = teaos.resources({ teaosResourcePrefixs: ['tea-'], recursive: true, multi: true });
+    assert.deepEqual(multiResources.get('lib/shared.js'), [
+      './lib/tea-bravo/resources/lib/shared.js',
+      './lib/tea-alpha/resources/lib/shared.js'
+    ]);
+
+    const dependencyResources = teaos.resources({ dependencies: ['@other'], recursive: true });
+    assert.deepEqual(Array.from(dependencyResources.keys()), ['lib/other/z.js']);
+
+    const filtered = teaos.resources({ path: 'lib/bravo', teaosResourcePrefixs: ['tea-'], recursive: true });
     assert.deepEqual(Array.from(filtered.keys()), ['lib/bravo/y.js']);
 
-    const cliResources = spawnSync(process.execPath, [teaosBin, 'ls', 'resources', 'lib/bravo'], {
+    const cliResources = spawnSync(process.execPath, [teaosBin, 'ls', 'resources', 'lib/bravo', '-r'], {
       cwd: root,
       encoding: 'utf-8',
       env: { ...process.env, TEAOS_RESOURCE_PREFIXS: 'tea-' }
