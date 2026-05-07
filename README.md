@@ -66,6 +66,12 @@ teaos ls lib
 Same output as `teaos ls`.
 
 ```bash
+teaos ls resources [PATH]
+```
+
+Prints `teaos.resources({ path: PATH })`.
+
+```bash
 teaos extension-types
 ```
 
@@ -271,6 +277,34 @@ teaos.localDependencies(lpath, { recursive: true });
 
 - `lpath`: path to scan (for example, `./lib` or `./apps`).
 - `recursive: true`: recursively reads discovered `teaos.json` files and returns accumulated dependencies.
+
+integrated resources API
+
+```javascript
+const teaos = require('teaos');
+
+const resources = teaos.resources();
+```
+
+When `TEAOS_RESOURCE_PREFIXS` is set, `teaos.resources()` scans local packages returned by `teaos.localDependencies(currentScope, { recursive: true })` whose package name matches one of the comma-separated prefixes. Each matched package contributes files under `lib/<package>/resources` into one `Map`.
+
+Map keys are resource paths relative to the package `resources` directory. Map values are project-relative file paths to the real files.
+
+```text
+lib/AAA/resources/lib/AAA/x.js
+lib/BBB/resources/lib/BBB/y.js
+```
+
+becomes:
+
+```javascript
+Map({
+  "lib/AAA/x.js": "./lib/AAA/resources/lib/AAA/x.js",
+  "lib/BBB/y.js": "./lib/BBB/resources/lib/BBB/y.js"
+})
+```
+
+If multiple packages provide the same resource key, packages later in `localDependencies(..., { recursive: true })` take priority. Use `teaos.resources({ path: "lib/AAA" })` or `teaos ls resources lib/AAA` to scan only one subtree.
 
 project attributes
 

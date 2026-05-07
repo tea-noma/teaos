@@ -199,6 +199,114 @@ function teaos_localDependencies(lpath, options){
   return dependencyTrace(lpath, options).allLocalDependencies;
 }
 
+function normalizeResourcePath(value){
+  return String(value || '').replace(/\\/g, '/').replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
+function resourcePrefixMatches(depName, prefixes){
+  const localName = depName[0] === '@' ? depName.slice(1) : depName;
+  for(let i = 0; i < prefixes.length; i++){
+    if(depName.indexOf(prefixes[i]) === 0 || localName.indexOf(prefixes[i]) === 0){
+      return true;
+    }
+  }
+  return false;
+}
+
+function findNearestConfigRoot(start){
+  let current = path.resolve(start || process.cwd());
+  while(true){
+    if(fs.existsSync(path.join(current, 'teaos.json')) || fs.existsSync(path.join(current, 'package.json'))){
+      return current;
+    }
+    const parent = path.dirname(current);
+    if(parent === current){
+      return path.resolve(start || process.cwd());
+    }
+    current = parent;
+  }
+}
+
+function findResourceProjectRoot(start){
+  let current = path.resolve(start || process.cwd());
+  let fallbackTeaosRoot = null;
+
+  while(true){
+    if(fs.existsSync(path.join(current, 'package.json'))){
+      return current;
+    }
+    if(!fallbackTeaosRoot && fs.existsSync(path.join(current, 'teaos.json'))){
+      fallbackTeaosRoot = current;
+    }
+
+    const parent = path.dirname(current);
+    if(parent === current){
+      return fallbackTeaosRoot || path.resolve(start || process.cwd());
+    }
+    current = parent;
+  }
+}
+
+function scanResourcesIntoMap(results, packageRoot, keyPrefix){
+  let entries = [];
+  try {
+    entries = fs.readdirSync(path.join(packageRoot, keyPrefix || ''));
+  } catch(err){
+    return;
+  }
+
+  for(let i = 0; i < entries.length; i++){
+    const name = entries[i];
+    const key = keyPrefix ? keyPrefix + '/' + name : name;
+    const abs = path.join(packageRoot, key);
+    let stat = null;
+    try {
+      stat = fs.statSync(abs);
+    } catch(err){
+      continue;
+    }
+    if(stat.isDirectory()){
+      scanResourcesIntoMap(results, packageRoot, key);
+    }else if(stat.isFile() && !results.has(key)){
+      results.set(key, './' + path.relative(process.cwd(), abs).replace(/\\/g, '/'));
+    }
+  }
+}
+
+function teaos_resources(lpath, options){
+  let start = lpath;
+  let filterPath = options && options.path;
+
+  if(lpath && (typeof lpath === 'object')){
+    start = null;
+    filterPath = lpath.path;
+  }
+
+  const prefixEnv = process.env.TEAOS_RESOURCE_PREFIXS || '';
+  const prefixes = prefixEnv.split(',').map((value) => value.trim()).filter((value) => value.length);
+  const results = new Map();
+  if(!prefixes.length){
+    return results;
+  }
+
+  const scopeRoot = findNearestConfigRoot(start || process.cwd());
+  const projectRoot = findResourceProjectRoot(scopeRoot);
+  const deps = teaos_localDependencies(scopeRoot, { recursive: true });
+  const normalizedFilter = normalizeResourcePath(filterPath);
+
+  for(let i = deps.length - 1; i >= 0; i--){
+    const depName = deps[i];
+    if(!resourcePrefixMatches(depName, prefixes)){
+      continue;
+    }
+    const localName = depName[0] === '@' ? depName.slice(1) : depName;
+    const resourceRoot = path.join(projectRoot, 'lib', localName, 'resources');
+    scanResourcesIntoMap(results, resourceRoot, normalizedFilter);
+  }
+
+  return results;
+}
+
 function readJsonFile(filePath){
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -263,4 +371,5 @@ exports.extensions = teaos_extensions;
 exports.getTools = teaos_getTools;
 exports.dependencies = teaos_dependencies;
 exports.localDependencies = teaos_localDependencies;
+exports.resources = teaos_resources;
 exports.attr = teaos_attr;
