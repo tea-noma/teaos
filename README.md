@@ -1,4 +1,4 @@
-teaos (0.0.8)
+teaos (0.0.9)
 ===
 
 Use local and npm package plugins with a unified runtime loader.
@@ -391,6 +391,10 @@ Theory
 History
 ---
 
+- version 0.0.9
+  - Add integrated `teaos.resources()` support for local package resources
+  - Add `teaos ls resources [PATH] [-r]` command
+  - Add resource options for dependency selection, recursive scanning, collision arrays, and API-provided prefixes
 - version 0.0.8
   - Stable commandline
 - version 0.0.7
