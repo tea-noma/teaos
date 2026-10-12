@@ -1,4 +1,4 @@
-teaos (0.0.9)
+teaos (0.1.0)
 ===
 
 Use local and npm package plugins with a unified runtime loader.
@@ -6,6 +6,19 @@ Use local and npm package plugins with a unified runtime loader.
 
 Changelog
 ---
+
+### 0.1.0 (2026-10-12)
+
+- Add getContext(), run(context, callback), supportAsyncContext interface
+- Add extensionKey() interface. accessable in the handler of teaos.on('declare', handler).
+
+### 0.0.9 (2026-05-07)
+
+- Add resources() interface
+
+### 0.0.8 (2026-05-03)
+
+- Support Nested node_modules 
 
 ### 0.0.7 (2026-05-02)
 
@@ -277,6 +290,23 @@ teaos.localDependencies(lpath, { recursive: true });
 
 - `lpath`: path to scan (for example, `./lib` or `./apps`).
 - `recursive: true`: recursively reads discovered `teaos.json` files and returns accumulated dependencies.
+
+get task context
+
+```javascript
+const teaos = require('teaos');
+const context = teaos.getContext();
+```
+
+get task context in multi-context ( node.js version >= 12.17.0. implemented by AsyncLocalStorage )
+
+```javascript
+const teaos = require('teaos');
+const context1 = {};
+const context2 = {};
+teaos.run(context1, () => { ... teaos.getContext(); ... });
+teaos.run(context2, () => { ... teaos.getContext(); ... });
+```
 
 integrated resources API
 

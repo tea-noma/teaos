@@ -122,6 +122,21 @@ function teaos_require(name){
   return require(name);
 }
 
+const loading = [];
+
+function teaos_loadExtension_(name){
+    loading.push(name); 
+    try {
+        return teaos_require(name);
+    } finally {
+        loading.pop();
+    }
+}
+
+function teaos_extensionKey(){
+    return loading.at(-1);
+}
+
 // load modules in dynamically
 function teaos_use(name, options){
   const mod = teaos_require(name);
@@ -139,17 +154,17 @@ function teaos_use(name, options){
     if(options.resources == '*'){
       if(extensions){
         for(let k in extensions){
-          teaos_require(name + '/lib/extensions/' + k);
+          teaos_loadExtension_(name + '/lib/extensions/' + k);
         }
       }
     }else if(options.resources instanceof Object){
       for(let kk in options.resources){
         if(extensions[kk]){
           if(options.resources[kk] == '*'){
-            teaos_require(name + '/lib/extensions/' + kk);
+            teaos_loadExtension_(name + '/lib/extensions/' + kk);
           }else if(options.resources[kk] instanceof Object){
             for(let k in options.resources[kk]){
-              teaos_require(name + '/lib/extensions/' + kk + '/' + k);
+              teaos_loadExtension_(name + '/lib/extensions/' + kk + '/' + k);
             }
           }
         }
@@ -423,3 +438,35 @@ exports.dependencies = teaos_dependencies;
 exports.localDependencies = teaos_localDependencies;
 exports.resources = teaos_resources;
 exports.attr = teaos_attr;
+
+let AsyncLocalStorage;
+
+try {
+    ({ AsyncLocalStorage } = require('async_hooks'));
+} catch (e) {
+    // 古い Node.js では利用できない
+}
+
+const storage = typeof AsyncLocalStorage === 'function'
+    ? new AsyncLocalStorage()
+    : null;
+
+const g_ctx = {};
+
+exports.getContext = () => {
+    return storage ? (storage.getStore() || g_ctx) : g_ctx;
+};
+
+exports.run = (context, callback) => {
+    if (!storage) {
+        throw new Error(
+            'VM mode requires AsyncLocalStorage (Node.js >= 12.17.0)'
+        );
+    }
+
+    return storage.run(context, callback);
+};
+
+exports.extensionKey = teaos_extensionKey;
+
+exports.supportsAsyncContext = !!storage;
