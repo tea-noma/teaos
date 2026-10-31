@@ -1,4 +1,4 @@
-teaos (0.1.0)
+teaos (0.1.1)
 ===
 
 Use local and npm package plugins with a unified runtime loader.
@@ -6,6 +6,12 @@ Use local and npm package plugins with a unified runtime loader.
 
 Changelog
 ---
+
+### 0.1.1 (2026-10-31)
+
+- `teaos install` resolves an app's `teaos.json` dependencies recursively; applications may depend on libraries and npm packages, but not other applications.
+- Add `--mode=full|shallow|files` for full Git history, a shallow clone, or a checkout without Git metadata. The mode also applies to transitive libraries.
+- Add `--user` and `--git-url` to select the GitHub account or repository base URL per command. With no repository setting, Git repositories are not fetched, as before.
 
 ### 0.1.0 (2026-10-12)
 
@@ -156,6 +162,10 @@ Creates `lib/<libname>/teaos.json` and `lib/<libname>/index.js`.
 teaos install [<name>|@<libname>]
 teaos install lib/<libname>
 teaos install apps/<appname>
+teaos install apps/<appname> --mode=files
+teaos install apps/<appname> --mode=shallow
+teaos install apps/<appname> --user tea-noma
+teaos install apps/<appname> --git-url https://github.com/tea-noma
 ```
 
 ```bash
@@ -174,7 +184,7 @@ Adds/synchronizes dependencies for the current scope (`project root`, `apps/<app
 - `teaos install @<libname>`
   - Adds `@<libname>: "*"` to scoped `teaos.json`.
   - If current scope is `apps/<appname>`, also adds the same entry to root `teaos.json`.
-  - If `TEAOS_REPO` is set (loaded from root `.env` when present) and `lib/<libname>` is missing, clones `<TEAOS_REPO>/<TEAOS_REPO_PREFIX><libname>.git` into `lib/<libname>`.
+  - If `lib/<libname>` is missing, clones `<repository base>/<TEAOS_REPO_PREFIX><libname>.git` into `lib/<libname>`.
   - `TEAOS_REPO_PREFIX` is optional (defaults to empty string when undefined).
 - `teaos install <name>`
   - Adds `<name>: "*"` to scoped `teaos.json`.
@@ -183,10 +193,36 @@ Adds/synchronizes dependencies for the current scope (`project root`, `apps/<app
   - Alias for `teaos install @<libname>`.
 - `teaos install apps/<appname>`
   - Installs an application repository into `./apps/<appname>` (if not already present).
-  - Uses `<TEAOS_REPO>/<APPS_REPO_PREFIX><appname>.git` as clone URL.
+  - Uses `<repository base>/<APPS_REPO_PREFIX><appname>.git` as clone URL.
   - `APPS_REPO_PREFIX` is optional (defaults to empty string when undefined).
+  - If the app has a `teaos.json` (including when already checked out), recursively installs its `@lib` and npm dependencies. Apps cannot depend on other apps; an `apps/...` dependency is rejected.
 - `teaos install` (no args)
   - Verifies and reconciles `dependencies` and local modules in the current scope.
+
+Repository selection for `apps/` and `lib/` repositories:
+
+No Git repository is fetched unless a repository source is explicitly set. Use
+`--user <GitHub account>` (for example, `--user tea-noma`) to fetch from GitHub,
+or `--git-url <repository base URL>` for a custom Git host or a
+local `file://` base. Both options accept `--option=value` syntax. If both are supplied,
+`--git-url` wins. Without CLI options, `TEAOS_REPO` takes precedence over `TEAOS_USER`;
+the project root `.env` is also read. CLI options take precedence over environment variables.
+`TEAOS_REPO_PREFIX` and `APPS_REPO_PREFIX` continue to apply to repository names.
+
+Git checkout modes:
+
+| Option | Files | Git metadata | History |
+| --- | --- | --- | --- |
+| `--mode=full` (default) | Latest checkout | Yes | Full clone |
+| `--mode=shallow` or `--shallow` | Latest checkout | Yes | Latest commit only (`--depth=1`) |
+| `--mode=files` or `--files-only` | Latest checkout | No | None after checkout |
+
+The mode applies to transitively fetched libraries too. `--mode files` is also accepted.
+Set `TEAOS_INSTALL_MODE` to choose a default mode (including from the project `.env`);
+an explicit command-line option takes precedence. Existing directories are left untouched,
+so use a fresh build directory when fetching the latest versions for deployment.
+Shallow and files-only modes use Git clone and therefore still require Git access to
+private repositories during the build. They do not change how npm packages are installed.
 
 
 ```bash
@@ -216,7 +252,7 @@ Prints traced dependency sets for the current project scope:
 Recursive verification:
 
 - Newly loaded `lib/*/teaos.json` files are read recursively.
-- Internal deps (`@...`) are checked against `lib/*` and loaded from `TEAOS_REPO` when available.
+- Internal deps (`@...`) are checked against `lib/*` and loaded from the selected repository base when missing.
 - npm deps are checked in root `node_modules`, and missing packages are installed.
 
 Dependency format in `teaos.json`:
