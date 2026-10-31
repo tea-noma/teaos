@@ -51,6 +51,83 @@ function setup(){
   }};
 }
 
+test('repository mappings override only selected app and library URLs without a base', () => {
+  const {root, env} = setup();
+  const base = path.dirname(root);
+  makeRemote(base, 'custom.site', {'@core': '*'});
+  makeRemote(base, 'custom.core', {'@helper': '*'});
+  fs.writeFileSync(path.join(root, 'teaos.json'), JSON.stringify({
+    name: 'root', dependencies: {}, repositories: {
+      'apps/site': 'file://' + path.join(base, 'remote/custom.site.git'),
+      'lib/core': 'file://' + path.join(base, 'remote/custom.core.git'),
+      'lib/helper': 'file://' + path.join(base, 'remote/teaos.helper.git'),
+    },
+  }));
+  const noBase = {...env};
+  delete noBase.TEAOS_REPO;
+  delete noBase.TEAOS_REPO_PREFIX;
+  delete noBase.APPS_REPO_PREFIX;
+  run(process.execPath, [teaosBin, 'install', 'apps/site', '--mode=files'], root, noBase);
+  const lock = JSON.parse(fs.readFileSync(path.join(root, 'apps/site/teaos-lock.json'), 'utf8'));
+  assert.equal(lock.application.remote, 'file://' + path.join(base, 'remote/custom.site.git'));
+  assert.equal(lock.packages['@core'].remote, 'file://' + path.join(base, 'remote/custom.core.git'));
+  assert.equal(lock.packages['@helper'].remote, 'file://' + path.join(base, 'remote/teaos.helper.git'));
+});
+
+test('an app repository mapping overrides the workspace mapping and lock remains pinned', () => {
+  const {root, env} = setup();
+  const base = path.dirname(root);
+  makeRemote(base, 'custom.core', {'@helper': '*'});
+  const app = path.join(root, 'apps/site');
+  fs.mkdirSync(app, {recursive: true});
+  fs.writeFileSync(path.join(root, 'teaos.json'), JSON.stringify({
+    name: 'root', dependencies: {}, repositories: {
+      'lib/core': 'file://' + path.join(base, 'remote/does-not-exist.git'),
+    },
+  }));
+  fs.writeFileSync(path.join(app, 'teaos.json'), JSON.stringify({
+    name: 'site', dependencies: {'@core': '*'}, repositories: {
+      'lib/core': 'file://' + path.join(base, 'remote/custom.core.git'),
+    },
+  }));
+  run(process.execPath, [teaosBin, 'install', '--mode=files'], app, env);
+  const lockPath = path.join(app, 'teaos-lock.json');
+  const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  assert.equal(lock.packages['@core'].remote, 'file://' + path.join(base, 'remote/custom.core.git'));
+  fs.renameSync(path.join(root, 'lib/core'), path.join(root, 'lib/core-backup'));
+  fs.writeFileSync(path.join(app, 'teaos.json'), JSON.stringify({
+    name: 'site', dependencies: {'@core': '*'}, repositories: {
+      'lib/core': 'file://' + path.join(base, 'remote/does-not-exist.git'),
+    },
+  }));
+  run(process.execPath, [teaosBin, 'install', '--mode=files'], app, env);
+  assert.equal(fs.existsSync(path.join(root, 'lib/core/teaos.json')), true);
+  assert.equal(JSON.parse(fs.readFileSync(lockPath, 'utf8')).packages['@core'].remote,
+    lock.packages['@core'].remote);
+});
+
+test('two apps cannot silently share a library with different mapped origins', () => {
+  const {root, env} = setup();
+  const base = path.dirname(root);
+  makeRemote(base, 'custom.core', {'@helper': '*'});
+  for(const name of ['first', 'second']){
+    const app = path.join(root, 'apps', name);
+    fs.mkdirSync(app, {recursive: true});
+    fs.writeFileSync(path.join(app, 'teaos.json'), JSON.stringify({
+      name, dependencies: {'@core': '*'}, repositories: {
+        'lib/core': 'file://' + path.join(base, 'remote',
+          name === 'first' ? 'teaos.core.git' : 'custom.core.git'),
+      },
+    }));
+  }
+  run(process.execPath, [teaosBin, 'install'], path.join(root, 'apps/first'), env);
+  const second = spawnSync(process.execPath, [teaosBin, 'install'], {
+    cwd: path.join(root, 'apps/second'), env, encoding: 'utf8',
+  });
+  assert.notEqual(second.status, 0);
+  assert.match(second.stderr, /existing library origin differs from teaos.json repository mapping/);
+});
+
 test('files mode fetches an app and its transitive libraries without Git metadata', () => {
   const {root, env} = setup();
   run(process.execPath, [teaosBin, 'install', 'apps/site', '--mode=files'], root, env);

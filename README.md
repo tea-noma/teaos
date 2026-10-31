@@ -13,6 +13,7 @@ Changelog
 - Added `--lock-source=local|remote` (default: `local`). Remote mode checks the published application lock and stages only changed libraries before switching them into place. Previous clean checkouts are retained for recovery; dirty local checkouts are not overwritten.
 - Added lightweight local Git snapshot inspection for HEAD, refs, and loose commit trees, with Git fallback for packed objects and Git status for worktree changes. Dependency inspection no longer rewrites an unchanged `teaos.json`.
 - Distinguished single-app projects (no `apps/`, root `teaos.json`) from multi-app projects (`apps/` exists). An empty or entirely invalid `apps/` directory now fails; explicit app installation can bootstrap the first app. Root single-app projects also support remote lock mode.
+- Added per-repository URL mappings in `teaos.json` (`apps/name` and `lib/name`). App-level mappings override workspace mappings for direct and transitive libraries; resolved URLs are recorded in each app's `teaos-lock.json`. Conflicting app mappings cannot silently reuse the same shared library checkout.
 
 ### 0.1.1 (2026-10-31)
 
@@ -233,6 +234,29 @@ local `file://` base. Both options accept `--option=value` syntax. If both are s
 `--git-url` wins. Without CLI options, `TEAOS_REPO` takes precedence over `TEAOS_USER`;
 the project root `.env` is also read. CLI options take precedence over environment variables.
 `TEAOS_REPO_PREFIX` and `APPS_REPO_PREFIX` continue to apply to repository names.
+Their defaults are empty: `apps/site` resolves to `<base>/site.git` and `@core`
+to `<base>/core.git`. Set `APPS_REPO_PREFIX=apps.` and
+`TEAOS_REPO_PREFIX=teaos.` for the conventional `<base>/apps.site.git` and
+`<base>/teaos.core.git` layout.
+
+Individual repository URLs can be overridden in `teaos.json`:
+
+```json
+{
+  "name": "site",
+  "dependencies": {"@core": "*"},
+  "repositories": {
+    "lib/core": "https://github.com/example/special-core.git"
+  }
+}
+```
+
+An app's `repositories` applies to its direct and transitive libraries and takes
+precedence over the workspace root's mapping. The root `teaos.json` can also map
+`apps/site` to an exact URL before that app is installed; this works without a
+repository base. Unmapped repositories continue to use the base and prefixes.
+In a multi-app workspace, the physical `lib/core` directory is shared: an app
+cannot silently reuse a clean checkout from a different explicitly mapped origin.
 
 Git checkout modes:
 
@@ -255,7 +279,11 @@ and detached HEAD. It does not treat an unchanged HEAD as proof that local files
 The lockfile is written beside the scoped `teaos.json` (for example,
 `apps/site/teaos-lock.json`). With a lockfile present, `teaos install` uses its
 recorded repository URL and commit, even if the remote has newer commits. In the
-default local-lock mode, existing libraries are never overwritten: a dirty or
+lock, `packages["@core"].remote` records each library's exact URL and the optional
+`application.remote` records the app URL. Existing lock entries take precedence
+over later changes to `repositories`; intentionally moving a locked dependency
+requires updating its lock entry or regenerating the lock from a clean checkout.
+In the default local-lock mode, existing libraries are never overwritten: a dirty or
 different Git checkout, or an edited files-only checkout, causes an error.
 Without a lockfile, existing libraries
 are included only when clean and confirmed at their remote branch tip; otherwise
@@ -272,7 +300,8 @@ library commits/trees. Changed libraries are prepared separately and switched
 into place after validation; unchanged libraries are not fetched. Dirty or
 unrecognized local libraries stop the update. Previous clean checkouts remain
 in the reported `lib/.teaos-stage-*` backup directory for recovery. With
-`--mode=files`, `--git-url` or `TEAOS_REPO` is needed if the app has no `.git`.
+`--mode=files`, an `application.remote` lock entry, an app repository mapping,
+`--git-url`, or `TEAOS_REPO` is needed if the app has no `.git`.
 This updates local libraries and the local lock; it does not pull app source or
 update npm dependencies beyond npm's own lockfile workflow.
 
@@ -286,6 +315,18 @@ choose the newest version satisfying all ranges. An empty intersection must
 fail before changing the shared npm installation. This is not implemented in
 0.1.2: npm dependencies are still installed by name, one at a time, and
 `teaos.json` version ranges are not yet enforced.
+
+### Planned: per-app runtime library resolution for debugging
+
+A future debug mode may load each app's `teaos-lock.json` at runtime and resolve
+`teaos.require('@name')` against that app's locked library mapping. This would
+allow, for example, Contabo and Cloudflare Workers variants such as `@db` and
+`@db--workers` to be tested in one workspace without changing production
+resolution. The variants must have separate physical checkout paths; a runtime
+alias alone cannot make two repositories coexist in `lib/name`. Module-level
+state and `teaos.use()` registrations also need isolation rules before two
+variants can run concurrently in one Node.js process. This mode is not part of
+0.1.2; the current conflict check remains in effect.
 
 
 ```bash
