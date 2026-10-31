@@ -13,6 +13,7 @@ Changelog
 - Add `--mode=full|shallow|files` for full Git history, a shallow clone, or a checkout without Git metadata. The mode also applies to transitive libraries.
 - Add `--user` and `--git-url` to select the GitHub account or repository base URL per command. With no repository setting, Git repositories are not fetched, as before.
 - Add a local Git snapshot reader for cloned checkouts: HEAD, refs, and loose commit trees are read directly; packed objects fall back to Git, and worktree cleanliness still uses Git status.
+- `teaos install` now writes a scoped `teaos-lock.json` containing direct dependencies and each resolved local library's remote URL, commit, and Git tree. Files-only checkouts also record a content hash. Re-running without a target restores missing libraries at the locked commit.
 
 ### 0.1.0 (2026-10-12)
 
@@ -227,6 +228,16 @@ private repositories during the build. They do not change how npm packages are i
 Dependency inspection does not rewrite an existing `teaos.json`. The Git snapshot reader
 supports `.git` directories and linked-worktree `.git` files, loose and packed refs,
 and detached HEAD. It does not treat an unchanged HEAD as proof that local files are clean.
+
+The lockfile is written beside the scoped `teaos.json` (for example,
+`apps/site/teaos-lock.json`). With a lockfile present, `teaos install` uses its
+recorded repository URL and commit, even if the remote has newer commits. Existing
+local libraries are never overwritten: a dirty or different Git checkout, or an
+edited files-only checkout, causes an error. Without a lockfile, existing libraries
+are included only when clean and confirmed at their remote branch tip; otherwise
+installation continues but no incomplete lockfile is written. Changing direct
+dependencies manually requires a named `teaos install @name` to update the lock.
+Npm dependencies remain governed by npm's `package-lock.json`.
 
 
 ```bash

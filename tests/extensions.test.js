@@ -148,44 +148,41 @@ test('loads external cli tool from node_modules package extension', () => {
 });
 
 test('teaos.attr returns project attributes', () => {
-  const root = mkTmpDir();
-  const main = require.main;
-  const prevMainFilename = main && main.filename;
-  if(main){
-    main.filename = path.join(root, 'entry.js');
-  }
+  const base = fs.realpathSync(mkTmpDir());
+  const root = path.join(base, 'project');
+  const installed = path.join(root, 'node_modules/teaos');
+  fs.mkdirSync(path.join(installed, 'lib/objects'), {recursive: true});
+  fs.copyFileSync(path.resolve(__dirname, '../index.js'), path.join(installed, 'index.js'));
+  fs.copyFileSync(path.resolve(__dirname, '../lib/objects/dependency-trace.js'),
+    path.join(installed, 'lib/objects/dependency-trace.js'));
+  const fixtureTeaos = require(installed);
 
-  assert.equal(teaos.attr('root'), root);
-  assert.equal(teaos.attr('name'), path.basename(root));
+  assert.equal(fixtureTeaos.attr('root'), root);
+  assert.equal(fixtureTeaos.attr('name'), path.basename(root));
 
   writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'teaos-name' }));
-  assert.equal(teaos.attr('name'), 'teaos-name');
+  assert.equal(fixtureTeaos.attr('name'), 'teaos-name');
 
   writeFile(path.join(root, 'package.json'), JSON.stringify({ name: 'pkg-name' }));
-  assert.equal(teaos.attr('name'), 'pkg-name');
+  assert.equal(fixtureTeaos.attr('name'), 'pkg-name');
 
-  assert.equal(teaos.attr('path.@apps'), null);
-  assert.equal(teaos.attr('path.apps'), null);
+  assert.equal(fixtureTeaos.attr('path.@apps'), null);
+  assert.equal(fixtureTeaos.attr('path.apps'), null);
   writeFile(path.join(root, 'apps/.keep'), '');
-  assert.equal(teaos.attr('path.@apps'), './apps');
-  assert.equal(teaos.attr('path.apps'), path.join(root, 'apps'));
+  assert.equal(fixtureTeaos.attr('path.@apps'), './apps');
+  assert.equal(fixtureTeaos.attr('path.apps'), path.join(root, 'apps'));
 
-  assert.equal(teaos.attr('path.@lib'), './lib');
-  fs.rmSync(path.resolve(root, '../lib'), { recursive: true, force: true });
-  assert.equal(teaos.attr('path.lib'), null);
+  assert.equal(fixtureTeaos.attr('path.@lib'), './lib');
+  assert.equal(fixtureTeaos.attr('path.lib'), null);
   writeFile(path.resolve(root, '../lib/.keep'), '');
-  assert.equal(teaos.attr('path.lib'), path.resolve(root, '../lib'));
+  assert.equal(fixtureTeaos.attr('path.lib'), path.resolve(root, '../lib'));
 
-  assert.equal(teaos.attr('path.@tests'), './tests');
-  fs.rmSync(path.resolve(root, '../tests'), { recursive: true, force: true });
-  assert.equal(teaos.attr('path.tests'), null);
+  assert.equal(fixtureTeaos.attr('path.@tests'), './tests');
+  assert.equal(fixtureTeaos.attr('path.tests'), null);
   writeFile(path.resolve(root, '../tests/.keep'), '');
-  assert.equal(teaos.attr('path.tests'), path.resolve(root, '../tests'));
+  assert.equal(fixtureTeaos.attr('path.tests'), path.resolve(root, '../tests'));
 
-  assert.equal(teaos.attr('unknown'), null);
-  if(main){
-    main.filename = prevMainFilename;
-  }
+  assert.equal(fixtureTeaos.attr('unknown'), null);
 });
 
 test('supports ls/extension-types/extensions teaos tools', () => {

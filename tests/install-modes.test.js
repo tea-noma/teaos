@@ -151,6 +151,16 @@ test('repository is not fetched without an explicit CLI or environment setting',
   assert.equal(captureCloneRemote([], {}, 'apps/site'), null);
 });
 
+test('an unresolved library does not produce an incomplete lockfile', () => {
+  const {root, env} = setup();
+  delete env.TEAOS_REPO;
+  fs.writeFileSync(path.join(root, 'teaos.json'), JSON.stringify({
+    name: 'root', dependencies: {'@missing': '*'},
+  }));
+  run(process.execPath, [teaosBin, 'install'], root, env);
+  assert.equal(fs.existsSync(path.join(root, 'teaos-lock.json')), false);
+});
+
 test('GitHub account can be selected from CLI or environment', () => {
   assert.equal(captureCloneRemote([], {TEAOS_USER: 'another-owner'}),
     'https://github.com/another-owner/core.git');
@@ -160,4 +170,111 @@ test('GitHub account can be selected from CLI or environment', () => {
   assert.equal(captureCloneRemote(['--user', 'ignored-owner', '--git-url',
     'https://git.example.org/actual-owner/'], {TEAOS_REPO: 'https://example.invalid/env-owner'}),
   'https://git.example.org/actual-owner/core.git');
+});
+
+test('app lock records transitive repository revisions and restores the pinned commits', () => {
+  const {root, env} = setup();
+  run(process.execPath, [teaosBin, 'install', 'apps/site'], root, env);
+  const app = path.join(root, 'apps/site');
+  const lock = JSON.parse(fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8'));
+  assert.equal(lock.lockfileVersion, 1);
+  assert.deepEqual(Object.keys(lock.packages).sort(), ['@core', '@helper']);
+  assert.match(lock.packages['@core'].commit, /^[0-9a-f]{40}$/);
+  assert.match(lock.packages['@core'].tree, /^[0-9a-f]{40}$/);
+
+  const seed = path.join(path.dirname(root), 'seed/teaos.core');
+  fs.writeFileSync(path.join(seed, 'index.js'), 'module.exports = {newer: true}\n');
+  run('git', ['add', 'index.js'], seed);
+  run('git', ['commit', '-m', 'newer'], seed);
+  run('git', ['push', 'origin', 'master'], seed);
+  assert.notEqual(run('git', ['rev-parse', 'HEAD'], seed).trim(), lock.packages['@core'].commit);
+
+  fs.rmSync(path.join(root, 'lib/core'), {recursive: true});
+  run(process.execPath, [teaosBin, 'install'], app, env);
+  assert.equal(run('git', ['rev-parse', 'HEAD'], path.join(root, 'lib/core')).trim(),
+    lock.packages['@core'].commit);
+  assert.equal(run('git', ['rev-parse', 'HEAD^{tree}'], path.join(root, 'lib/core')).trim(),
+    lock.packages['@core'].tree);
+});
+
+test('files-only lock detects local edits without Git metadata', () => {
+  const {root, env} = setup();
+  run(process.execPath, [teaosBin, 'install', 'apps/site', '--mode=files'], root, env);
+  const app = path.join(root, 'apps/site');
+  const lock = JSON.parse(fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8'));
+  assert.match(lock.packages['@core'].contentHash, /^[0-9a-f]{64}$/);
+  fs.writeFileSync(path.join(root, 'lib/core/index.js'), 'local edit\n');
+  const result = spawnSync(process.execPath, [teaosBin, 'install'], {cwd: app, env, encoding: 'utf8'});
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /local files differ from teaos-lock.json/);
+  assert.equal(fs.readFileSync(path.join(root, 'lib/core/index.js'), 'utf8'), 'local edit\n');
+});
+
+test('locked Git checkout rejects local edits without overwriting them', () => {
+  const {root, env} = setup();
+  run(process.execPath, [teaosBin, 'install', 'apps/site'], root, env);
+  const app = path.join(root, 'apps/site');
+  const source = path.join(root, 'lib/core/index.js');
+  fs.writeFileSync(source, 'local edit\n');
+  const result = spawnSync(process.execPath, [teaosBin, 'install'], {cwd: app, env, encoding: 'utf8'});
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /local repository differs from teaos-lock.json/);
+  assert.equal(fs.readFileSync(source, 'utf8'), 'local edit\n');
+});
+
+test('a Git lock can materialize the pinned revision in files-only mode', () => {
+  const {root, env} = setup();
+  run(process.execPath, [teaosBin, 'install', 'apps/site'], root, env);
+  const app = path.join(root, 'apps/site');
+  const lockPath = path.join(app, 'teaos-lock.json');
+  const oldLock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  assert.equal(oldLock.packages['@core'].contentHash, undefined);
+  const seed = path.join(path.dirname(root), 'seed/teaos.core');
+  fs.writeFileSync(path.join(seed, 'index.js'), 'module.exports = {newer: true}\n');
+  run('git', ['add', 'index.js'], seed);
+  run('git', ['commit', '-m', 'newer'], seed);
+  run('git', ['push', 'origin', 'master'], seed);
+  fs.rmSync(path.join(root, 'lib/core'), {recursive: true});
+  run(process.execPath, [teaosBin, 'install', '--mode=files'], app, env);
+  const core = path.join(root, 'lib/core');
+  assert.equal(fs.existsSync(path.join(core, '.git')), false);
+  assert.equal(fs.readFileSync(path.join(core, 'index.js'), 'utf8'), 'module.exports = {}\n');
+  const updatedLock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+  assert.equal(updatedLock.packages['@core'].commit, oldLock.packages['@core'].commit);
+  assert.match(updatedLock.packages['@core'].contentHash, /^[0-9a-f]{64}$/);
+});
+
+test('dirty or unpushed existing library is left untouched and not locked', () => {
+  const {root, env} = setup();
+  fs.writeFileSync(path.join(root, 'teaos.json'), JSON.stringify({name: 'root', dependencies: {'@core': '*'}}));
+  const remote = path.join(path.dirname(root), 'remote/teaos.core.git');
+  const lib = path.join(root, 'lib/core');
+  fs.mkdirSync(path.dirname(lib), {recursive: true});
+  run('git', ['clone', remote, lib], root);
+  fs.writeFileSync(path.join(lib, 'index.js'), 'uncommitted\n');
+  run(process.execPath, [teaosBin, 'install'], root, env);
+  assert.equal(fs.existsSync(path.join(root, 'teaos-lock.json')), false);
+  assert.equal(fs.readFileSync(path.join(lib, 'index.js'), 'utf8'), 'uncommitted\n');
+  run('git', ['config', 'user.name', 'TeaOS Test'], lib);
+  run('git', ['config', 'user.email', 'test@example.invalid'], lib);
+  run('git', ['add', 'index.js'], lib);
+  run('git', ['commit', '-m', 'local only'], lib);
+  run(process.execPath, [teaosBin, 'install'], root, env);
+  assert.equal(fs.existsSync(path.join(root, 'teaos-lock.json')), false);
+});
+
+test('an existing lock rejects unrecorded dependency edits but named install updates it', () => {
+  const {root, env} = setup();
+  run(process.execPath, [teaosBin, 'install', 'apps/site'], root, env);
+  const app = path.join(root, 'apps/site');
+  const configPath = path.join(app, 'teaos.json');
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  config.dependencies['@helper'] = '*';
+  fs.writeFileSync(configPath, JSON.stringify(config));
+  const rejected = spawnSync(process.execPath, [teaosBin, 'install'], {cwd: app, env, encoding: 'utf8'});
+  assert.notEqual(rejected.status, 0);
+  assert.match(rejected.stderr, /teaos.json dependencies differ/);
+  run(process.execPath, [teaosBin, 'install', '@helper'], app, env);
+  const lock = JSON.parse(fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8'));
+  assert.equal(lock.dependencies['@helper'], '*');
 });
