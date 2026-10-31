@@ -1,4 +1,4 @@
-teaos (0.1.1)
+teaos (0.1.2)
 ===
 
 Use local and npm package plugins with a unified runtime loader.
@@ -7,15 +7,18 @@ Use local and npm package plugins with a unified runtime loader.
 Changelog
 ---
 
+### 0.1.2 (2026-10-31)
+
+- Added a scoped `teaos-lock.json` with direct dependencies and local library remote URL, commit, and Git tree. `teaos install` restores missing libraries at the locked revision; files-only checkouts use a content hash to detect edits.
+- Added `--lock-source=local|remote` (default: `local`). Remote mode checks the published application lock and stages only changed libraries before switching them into place. Previous clean checkouts are retained for recovery; dirty local checkouts are not overwritten.
+- Added lightweight local Git snapshot inspection for HEAD, refs, and loose commit trees, with Git fallback for packed objects and Git status for worktree changes. Dependency inspection no longer rewrites an unchanged `teaos.json`.
+- Distinguished single-app projects (no `apps/`, root `teaos.json`) from multi-app projects (`apps/` exists). An empty or entirely invalid `apps/` directory now fails; explicit app installation can bootstrap the first app. Root single-app projects also support remote lock mode.
+
 ### 0.1.1 (2026-10-31)
 
 - `teaos install` resolves an app's `teaos.json` dependencies recursively; applications may depend on libraries and npm packages, but not other applications.
 - Add `--mode=full|shallow|files` for full Git history, a shallow clone, or a checkout without Git metadata. The mode also applies to transitive libraries.
 - Add `--user` and `--git-url` to select the GitHub account or repository base URL per command. With no repository setting, Git repositories are not fetched, as before.
-- Add a local Git snapshot reader for cloned checkouts: HEAD, refs, and loose commit trees are read directly; packed objects fall back to Git, and worktree cleanliness still uses Git status.
-- `teaos install` now writes a scoped `teaos-lock.json` containing direct dependencies and each resolved local library's remote URL, commit, and Git tree. Files-only checkouts also record a content hash. Re-running without a target restores missing libraries at the locked commit.
-- `teaos install --lock-source=remote` checks the app repository's published lock and stages only changed libraries before switching them into place. The default `--lock-source=local` keeps using the checked-out lock.
-- Project layout is selected by the presence of `apps/`: without it, root `teaos.json` is the single app; with it, at least one direct child must have a valid app `teaos.json`.
 
 ### 0.1.0 (2026-10-12)
 
@@ -241,8 +244,8 @@ Git checkout modes:
 
 The mode applies to transitively fetched libraries too. `--mode files` is also accepted.
 Set `TEAOS_INSTALL_MODE` to choose a default mode (including from the project `.env`);
-an explicit command-line option takes precedence. Existing directories are left untouched,
-so use a fresh build directory when fetching the latest versions for deployment.
+an explicit command-line option takes precedence. In local-lock mode, existing
+directories are left untouched; use remote-lock mode for a validated partial update.
 Shallow and files-only modes use Git clone and therefore still require Git access to
 private repositories during the build. They do not change how npm packages are installed.
 Dependency inspection does not rewrite an existing `teaos.json`. The Git snapshot reader
@@ -272,6 +275,17 @@ in the reported `lib/.teaos-stage-*` backup directory for recovery. With
 `--mode=files`, `--git-url` or `TEAOS_REPO` is needed if the app has no `.git`.
 This updates local libraries and the local lock; it does not pull app source or
 update npm dependencies beyond npm's own lockfile workflow.
+
+### Planned: shared npm dependency resolution
+
+The project has one root `package.json` and `package-lock.json`, even when it
+contains multiple apps. A future `teaos install` update must collect npm semver
+ranges from the root app/host, each selected app, and their reachable libraries;
+combine requirements for the same npm package as an **AND** constraint; and
+choose the newest version satisfying all ranges. An empty intersection must
+fail before changing the shared npm installation. This is not implemented in
+0.1.2: npm dependencies are still installed by name, one at a time, and
+`teaos.json` version ranges are not yet enforced.
 
 
 ```bash
