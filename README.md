@@ -12,6 +12,7 @@ Changelog
 - `teaos install` resolves an app's `teaos.json` dependencies recursively; applications may depend on libraries and npm packages, but not other applications.
 - Add `--mode=full|shallow|files` for full Git history, a shallow clone, or a checkout without Git metadata. The mode also applies to transitive libraries.
 - Add `--user` and `--git-url` to select the GitHub account or repository base URL per command. With no repository setting, Git repositories are not fetched, as before.
+- Add a local Git snapshot reader for cloned checkouts: HEAD, refs, and loose commit trees are read directly; packed objects fall back to Git, and worktree cleanliness still uses Git status.
 
 ### 0.1.0 (2026-10-12)
 
@@ -223,6 +224,9 @@ an explicit command-line option takes precedence. Existing directories are left 
 so use a fresh build directory when fetching the latest versions for deployment.
 Shallow and files-only modes use Git clone and therefore still require Git access to
 private repositories during the build. They do not change how npm packages are installed.
+Dependency inspection does not rewrite an existing `teaos.json`. The Git snapshot reader
+supports `.git` directories and linked-worktree `.git` files, loose and packed refs,
+and detached HEAD. It does not treat an unchanged HEAD as proof that local files are clean.
 
 
 ```bash

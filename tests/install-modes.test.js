@@ -103,6 +103,15 @@ test('application-to-application dependencies are rejected', () => {
   assert.match(result.stderr, /application dependencies are not supported/);
 });
 
+test('dependency inspection leaves an existing teaos.json byte-for-byte unchanged', () => {
+  const {root, env} = setup();
+  const config = path.join(root, 'teaos.json');
+  const original = '{\n  "name": "root",\n  "dependencies": {}\n}\n';
+  fs.writeFileSync(config, original);
+  run(process.execPath, [teaosBin, 'install'], root, env);
+  assert.equal(fs.readFileSync(config, 'utf8'), original);
+});
+
 test('--git-url overrides the environment base for apps and transitive libraries', () => {
   const {root, env} = setup();
   env.TEAOS_REPO = 'file:///nonexistent/teaos-repositories';
