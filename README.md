@@ -14,6 +14,8 @@ Changelog
 - Add `--user` and `--git-url` to select the GitHub account or repository base URL per command. With no repository setting, Git repositories are not fetched, as before.
 - Add a local Git snapshot reader for cloned checkouts: HEAD, refs, and loose commit trees are read directly; packed objects fall back to Git, and worktree cleanliness still uses Git status.
 - `teaos install` now writes a scoped `teaos-lock.json` containing direct dependencies and each resolved local library's remote URL, commit, and Git tree. Files-only checkouts also record a content hash. Re-running without a target restores missing libraries at the locked commit.
+- `teaos install --lock-source=remote` checks the app repository's published lock and stages only changed libraries before switching them into place. The default `--lock-source=local` keeps using the checked-out lock.
+- Project layout is selected by the presence of `apps/`: without it, root `teaos.json` is the single app; with it, at least one direct child must have a valid app `teaos.json`.
 
 ### 0.1.0 (2026-10-12)
 
@@ -168,7 +170,25 @@ teaos install apps/<appname> --mode=files
 teaos install apps/<appname> --mode=shallow
 teaos install apps/<appname> --user tea-noma
 teaos install apps/<appname> --git-url https://github.com/tea-noma
+teaos install apps/<appname> --lock-source=remote
 ```
+
+Project layouts:
+
+- No `apps/` directory: the root `teaos.json` defines one application and its
+  `teaos-lock.json` is stored at the root.
+- `apps/` directory present: the project is multi-app. At least one immediate
+  child directory must have a `teaos.json` with a nonempty `name` and an optional
+  object-valued `dependencies`. A root `teaos install` validates the layout and
+  visits only the root host config, if present; install an app from its own
+  directory or with `teaos install apps/NAME`. This avoids merging shared npm
+  versions sequentially before the multi-app npm constraint resolver exists.
+  An empty or entirely invalid `apps/` directory is an error.
+  An explicit `teaos install apps/NAME` may create
+  the first app and validates its definition after cloning.
+- Remote lock mode works from the root of a single-app project or from an app
+  scope in a multi-app project. In a multi-app root, specify `apps/NAME` to
+  select which remote app lock to use.
 
 ```bash
 teaos init
@@ -231,13 +251,27 @@ and detached HEAD. It does not treat an unchanged HEAD as proof that local files
 
 The lockfile is written beside the scoped `teaos.json` (for example,
 `apps/site/teaos-lock.json`). With a lockfile present, `teaos install` uses its
-recorded repository URL and commit, even if the remote has newer commits. Existing
-local libraries are never overwritten: a dirty or different Git checkout, or an
-edited files-only checkout, causes an error. Without a lockfile, existing libraries
+recorded repository URL and commit, even if the remote has newer commits. In the
+default local-lock mode, existing libraries are never overwritten: a dirty or
+different Git checkout, or an edited files-only checkout, causes an error.
+Without a lockfile, existing libraries
 are included only when clean and confirmed at their remote branch tip; otherwise
 installation continues but no incomplete lockfile is written. Changing direct
 dependencies manually requires a named `teaos install @name` to update the lock.
 Npm dependencies remain governed by npm's `package-lock.json`.
+
+For a deployed app, run `teaos install --lock-source=remote` from `apps/<appname>`
+or `teaos install apps/<appname> --lock-source=remote` from the workspace root.
+The app repository must publish `teaos-lock.json`; the local app `teaos.json`
+must already match its direct dependencies. The command checks the remote app
+HEAD, fetches its lock only when that revision is new, and compares the recorded
+library commits/trees. Changed libraries are prepared separately and switched
+into place after validation; unchanged libraries are not fetched. Dirty or
+unrecognized local libraries stop the update. Previous clean checkouts remain
+in the reported `lib/.teaos-stage-*` backup directory for recovery. With
+`--mode=files`, `--git-url` or `TEAOS_REPO` is needed if the app has no `.git`.
+This updates local libraries and the local lock; it does not pull app source or
+update npm dependencies beyond npm's own lockfile workflow.
 
 
 ```bash

@@ -80,6 +80,83 @@ test('default mode retains full repository history', () => {
   assert.equal(run('git', ['rev-list', '--count', 'HEAD'], path.join(root, 'lib/helper')).trim(), '2');
 });
 
+test('without apps directory the root teaos.json is the single application', () => {
+  const {root, env} = setup();
+  fs.writeFileSync(path.join(root, 'teaos.json'), JSON.stringify({
+    name: 'site', dependencies: {'@core': '*'},
+  }));
+  run(process.execPath, [teaosBin, 'install'], root, env);
+  const lock = JSON.parse(fs.readFileSync(path.join(root, 'teaos-lock.json'), 'utf8'));
+  assert.deepEqual(Object.keys(lock.packages).sort(), ['@core', '@helper']);
+  assert.equal(fs.existsSync(path.join(root, 'apps')), false);
+});
+
+test('root install in multi-app layout validates apps without sequentially resolving their npm dependencies', () => {
+  const {root, env} = setup();
+  const first = path.join(root, 'apps/first');
+  const second = path.join(root, 'apps/second');
+  fs.mkdirSync(first, {recursive: true});
+  fs.mkdirSync(second, {recursive: true});
+  fs.writeFileSync(path.join(first, 'teaos.json'), JSON.stringify({name: 'first', dependencies: {'@core': '*'}}));
+  fs.writeFileSync(path.join(second, 'teaos.json'), JSON.stringify({name: 'second', dependencies: {'@helper': '*'}}));
+  run(process.execPath, [teaosBin, 'install'], root, env);
+  assert.equal(fs.existsSync(path.join(first, 'teaos-lock.json')), false);
+  assert.equal(fs.existsSync(path.join(second, 'teaos-lock.json')), false);
+  run(process.execPath, [teaosBin, 'install'], first, env);
+  run(process.execPath, [teaosBin, 'install'], second, env);
+  assert.equal(fs.existsSync(path.join(first, 'teaos-lock.json')), true);
+  assert.equal(fs.existsSync(path.join(second, 'teaos-lock.json')), true);
+  assert.equal(fs.existsSync(path.join(root, 'lib/core/teaos.json')), true);
+  assert.equal(fs.existsSync(path.join(root, 'lib/helper/teaos.json')), true);
+});
+
+test('apps directory with no valid app definition fails, but an explicit app install can bootstrap it', () => {
+  const {root, env} = setup();
+  fs.mkdirSync(path.join(root, 'apps'));
+  const invalid = spawnSync(process.execPath, [teaosBin, 'install'], {cwd: root, env, encoding: 'utf8'});
+  assert.notEqual(invalid.status, 0);
+  assert.match(invalid.stderr, /apps exists but contains no valid app teaos.json/);
+  run(process.execPath, [teaosBin, 'install', 'apps/site'], root, env);
+  assert.equal(fs.existsSync(path.join(root, 'apps/site/teaos-lock.json')), true);
+});
+
+test('malformed app definitions do not make an apps directory valid', () => {
+  const {root, env} = setup();
+  const app = path.join(root, 'apps/broken');
+  fs.mkdirSync(app, {recursive: true});
+  fs.writeFileSync(path.join(app, 'teaos.json'), '{not json');
+  const result = spawnSync(process.execPath, [teaosBin, 'install'], {cwd: root, env, encoding: 'utf8'});
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /apps exists but contains no valid app teaos.json/);
+});
+
+test('multi-app root requires an explicit app for remote-lock updates', () => {
+  const {root, env} = setup();
+  const app = path.join(root, 'apps/first');
+  fs.mkdirSync(app, {recursive: true});
+  fs.writeFileSync(path.join(app, 'teaos.json'), JSON.stringify({name: 'first', dependencies: {}}));
+  const result = spawnSync(process.execPath, [teaosBin, 'install', '--lock-source=remote'],
+    {cwd: root, env, encoding: 'utf8'});
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /requires a single root app or apps\/APPNAME/);
+});
+
+test('single root application can use its published remote lock', () => {
+  const {root, env} = setup();
+  fs.writeFileSync(path.join(root, 'teaos.json'), JSON.stringify({
+    name: 'site', dependencies: {'@core': '*'},
+  }));
+  run(process.execPath, [teaosBin, 'install'], root, env);
+  const appSeed = path.join(path.dirname(root), 'seed/apps.site');
+  fs.copyFileSync(path.join(root, 'teaos-lock.json'), path.join(appSeed, 'teaos-lock.json'));
+  run('git', ['add', 'teaos-lock.json'], appSeed);
+  run('git', ['commit', '-m', 'publish root lock'], appSeed);
+  run('git', ['push', 'origin', 'master'], appSeed);
+  run(process.execPath, [teaosBin, 'install', '--lock-source=remote'], root, env);
+  const lock = JSON.parse(fs.readFileSync(path.join(root, 'teaos-lock.json'), 'utf8'));
+  assert.match(lock.upstream.commit, /^[0-9a-f]{40}$/);
+});
+
 test('an already checked-out app still resolves its library dependencies', () => {
   const {root, env} = setup();
   const app = path.join(root, 'apps/site');
@@ -133,7 +210,7 @@ function captureCloneRemote(args, overrides = {}, target = 'lib/core'){
   fs.symlinkSync(path.resolve(__dirname, '..'), path.join(root, 'node_modules', 'teaos'), 'dir');
   fs.writeFileSync(path.join(root, 'teaos.json'), JSON.stringify({name: 'root', dependencies: {}}));
   const git = path.join(bin, 'git');
-  fs.writeFileSync(git, '#!/bin/sh\nprintf "%s" "$2" > "$TEAOS_CAPTURE_FILE"\nmkdir -p "$3"\n');
+  fs.writeFileSync(git, '#!/bin/sh\nprintf "%s" "$2" > "$TEAOS_CAPTURE_FILE"\nmkdir -p "$3"\nprintf \'{"name":"capture","dependencies":{}}\' > "$3/teaos.json"\n');
   fs.chmodSync(git, 0o755);
   const env = {...process.env, ...overrides,
     PATH: bin + path.delimiter + process.env.PATH,
@@ -277,4 +354,90 @@ test('an existing lock rejects unrecorded dependency edits but named install upd
   run(process.execPath, [teaosBin, 'install', '@helper'], app, env);
   const lock = JSON.parse(fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8'));
   assert.equal(lock.dependencies['@helper'], '*');
+});
+
+function publishUpdatedAppLock(root){
+  const base = path.dirname(root);
+  const app = path.join(root, 'apps/site');
+  const coreSeed = path.join(base, 'seed/teaos.core');
+  fs.writeFileSync(path.join(coreSeed, 'index.js'), 'module.exports = {version: 3}\n');
+  run('git', ['add', 'index.js'], coreSeed);
+  run('git', ['commit', '-m', 'new core'], coreSeed);
+  run('git', ['push', 'origin', 'master'], coreSeed);
+  const lock = JSON.parse(fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8'));
+  lock.packages['@core'].commit = run('git', ['rev-parse', 'HEAD'], coreSeed).trim();
+  lock.packages['@core'].tree = run('git', ['rev-parse', 'HEAD^{tree}'], coreSeed).trim();
+  delete lock.packages['@core'].contentHash;
+  const appSeed = path.join(base, 'seed/apps.site');
+  fs.writeFileSync(path.join(appSeed, 'teaos-lock.json'), JSON.stringify(lock, null, 2) + '\n');
+  run('git', ['add', 'teaos-lock.json'], appSeed);
+  run('git', ['commit', '-m', 'update dependency lock'], appSeed);
+  run('git', ['push', 'origin', 'master'], appSeed);
+  return lock;
+}
+
+test('remote lock mode updates only changed libraries and preserves previous checkout', () => {
+  const {root, env} = setup();
+  run(process.execPath, [teaosBin, 'install', 'apps/site'], root, env);
+  const app = path.join(root, 'apps/site');
+  const helper = path.join(root, 'lib/helper');
+  const helperHead = run('git', ['rev-parse', 'HEAD'], helper).trim();
+  const published = publishUpdatedAppLock(root);
+  run(process.execPath, [teaosBin, 'install', '--lock-source=remote'], app, env);
+  assert.equal(run('git', ['rev-parse', 'HEAD'], path.join(root, 'lib/core')).trim(),
+    published.packages['@core'].commit);
+  assert.equal(run('git', ['rev-parse', 'HEAD'], helper).trim(), helperHead);
+  const lock = JSON.parse(fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8'));
+  assert.equal(lock.packages['@core'].commit, published.packages['@core'].commit);
+  assert.match(lock.upstream.commit, /^[0-9a-f]{40}$/);
+  assert.match(lock.upstream.lockIdentity, /^[0-9a-f]{64}$/);
+  const backups = fs.readdirSync(path.join(root, 'lib')).filter(name => name.startsWith('.teaos-stage-'));
+  assert.equal(backups.length, 1);
+  assert.equal(fs.existsSync(path.join(root, 'lib', backups[0], '.previous-core/index.js')), true);
+  run(process.execPath, [teaosBin, 'install', '--lock-source=remote'], app, env);
+  assert.deepEqual(fs.readdirSync(path.join(root, 'lib')).filter(name => name.startsWith('.teaos-stage-')), backups);
+});
+
+test('remote lock mode updates a files-only deployment without changing unchanged libraries', () => {
+  const {root, env} = setup();
+  run(process.execPath, [teaosBin, 'install', 'apps/site', '--mode=files'], root, env);
+  const app = path.join(root, 'apps/site');
+  const helper = path.join(root, 'lib/helper/index.js');
+  const helperBefore = fs.readFileSync(helper, 'utf8');
+  const published = publishUpdatedAppLock(root);
+  run(process.execPath, [teaosBin, 'install', '--lock-source=remote', '--mode=files'], app, env);
+  assert.equal(fs.readFileSync(path.join(root, 'lib/core/index.js'), 'utf8'),
+    'module.exports = {version: 3}\n');
+  assert.equal(fs.existsSync(path.join(root, 'lib/core/.git')), false);
+  assert.equal(fs.readFileSync(helper, 'utf8'), helperBefore);
+  const lock = JSON.parse(fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8'));
+  assert.equal(lock.packages['@core'].commit, published.packages['@core'].commit);
+  assert.match(lock.packages['@core'].contentHash, /^[0-9a-f]{64}$/);
+});
+
+test('remote lock mode fails clearly when the app repository has no published lock', () => {
+  const {root, env} = setup();
+  run(process.execPath, [teaosBin, 'install', 'apps/site'], root, env);
+  const app = path.join(root, 'apps/site');
+  const before = fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8');
+  const result = spawnSync(process.execPath, [teaosBin, 'install', '--lock-source=remote'],
+    {cwd: app, env, encoding: 'utf8'});
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /remote app has no teaos-lock.json/);
+  assert.equal(fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8'), before);
+});
+
+test('remote lock mode rejects a modified library before updating the local lock', () => {
+  const {root, env} = setup();
+  run(process.execPath, [teaosBin, 'install', 'apps/site'], root, env);
+  const app = path.join(root, 'apps/site');
+  const oldLock = fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8');
+  publishUpdatedAppLock(root);
+  fs.writeFileSync(path.join(root, 'lib/core/index.js'), 'local edit\n');
+  const result = spawnSync(process.execPath, [teaosBin, 'install', '--lock-source=remote'],
+    {cwd: app, env, encoding: 'utf8'});
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /local repository differs from teaos-lock.json/);
+  assert.equal(fs.readFileSync(path.join(app, 'teaos-lock.json'), 'utf8'), oldLock);
+  assert.equal(fs.readFileSync(path.join(root, 'lib/core/index.js'), 'utf8'), 'local edit\n');
 });

@@ -293,7 +293,31 @@ test('supports install apps/<name> with APPS_REPO_PREFIX', () => {
   writeFile(path.join(root, 'teaos.json'), JSON.stringify({ name: 'root', dependencies: {} }, null, 2));
 
   const remoteApp = path.join(remoteBase, 'app-sample.git');
-  spawnSync('git', ['init', '--bare', remoteApp], { encoding: 'utf-8' });
+  const seed = path.join(base, 'app-seed');
+  fs.mkdirSync(seed);
+  for(const args of [
+    ['init', '--bare', remoteApp],
+    ['init', seed],
+  ]){
+    const result = spawnSync('git', args, {cwd: base, encoding: 'utf-8'});
+    assert.equal(result.status, 0, result.stderr);
+  }
+  writeFile(path.join(seed, 'teaos.json'), JSON.stringify({name: 'sample', dependencies: {}}));
+  for(const args of [
+    ['config', 'user.name', 'TeaOS Test'],
+    ['config', 'user.email', 'test@example.invalid'],
+    ['branch', '-M', 'master'],
+    ['add', 'teaos.json'],
+    ['commit', '-m', 'initial app'],
+    ['remote', 'add', 'origin', remoteApp],
+    ['push', '-u', 'origin', 'master'],
+  ]){
+    const result = spawnSync('git', args, {cwd: seed, encoding: 'utf-8'});
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const head = spawnSync('git', ['--git-dir', remoteApp, 'symbolic-ref', 'HEAD', 'refs/heads/master'],
+    {cwd: base, encoding: 'utf-8'});
+  assert.equal(head.status, 0, head.stderr);
 
   const installApp = spawnSync(process.execPath, [teaosBin, 'install', 'apps/sample'], {
     cwd: root,
