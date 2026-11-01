@@ -102,6 +102,8 @@ function resolveTeaosModulePath(name){
   return resolveNodeModulePath(name);
 }
 
+const hooks = {}; // extension for cloudflare workers
+
 // load modules in statically
 function teaos_require(name){
   const funcs = listeners['require'];
@@ -109,6 +111,10 @@ function teaos_require(name){
     for(let i = 0; i < funcs.length; i++){
       funcs[i].apply(null, [name]);
     }
+  }
+
+  if(hooks[name]){
+  	return hooks[name]();
   }
 
   if(isLocalModule(name)){
@@ -174,14 +180,18 @@ function teaos_use(name, options){
   return inst;
 }
 
+const extensionHooks = {};
+
 function teaos_extensions(name){
   const results = {};
   try {
+    if(extensionHooks[name]){
+  	  return extensionHooks[name]();
+    }
     const modpath = resolveTeaosModulePath(name);
     if(!modpath){
       return results;
     }
-
     const files = fs.readdirSync(path.join(modpath, 'lib/extensions'));
     files.forEach((file) => {
       if(file.indexOf('.') != -1){
@@ -470,3 +480,6 @@ exports.run = (context, callback) => {
 exports.extensionKey = teaos_extensionKey;
 
 exports.supportsAsyncContext = !!storage;
+
+exports.hooks = hooks;
+exports.extensionHooks = extensionHooks;
