@@ -436,6 +436,56 @@ function teaos_attr(name){
   }
 }
 
+class MailboxClosedError extends Error {
+  constructor() {
+    super('Mailbox closed');
+    this.name = 'MailboxClosedError';
+    this.code = 'ERR_MAILBOX_CLOSED';
+  }
+}
+
+class Mailbox {
+  constructor() {
+    this.queue = [];
+    this.waiters = [];
+    this.closed = false;
+  }
+
+  send(message) {
+    if (this.closed) throw new MailboxClosedError();
+
+    const waiter = this.waiters.shift();
+
+    if (waiter) {
+      waiter.resolve(message);
+    } else {
+      this.queue.push(message);
+    }
+  }
+
+  recv() {
+    if (this.queue.length) {
+      return Promise.resolve(this.queue.shift());
+    }
+
+    if (this.closed) {
+      return Promise.reject(new MailboxClosedError());
+    }
+
+    return new Promise((resolve, reject) => {
+      this.waiters.push({ resolve, reject });
+    });
+  }
+
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    for (const waiter of this.waiters.splice(0)) {
+      waiter.reject(new MailboxClosedError());
+    }
+  }
+}
+
 exports.makeRequirePath = makeRequirePath;
 exports.set = teaos_set;
 exports.on = teaos_on;
@@ -483,3 +533,5 @@ exports.supportsAsyncContext = !!storage;
 
 exports.hooks = hooks;
 exports.extensionHooks = extensionHooks;
+exports.Mailbox = Mailbox;
+exports.MailboxClosedError = MailboxClosedError;

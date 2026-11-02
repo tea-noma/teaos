@@ -7,13 +7,15 @@ Use local and npm package plugins with a unified runtime loader.
 Changelog
 ---
 
-### 0.1.2 (2026-10-31)
+### 0.1.2 (2026-11-02)
 
 - Added a scoped `teaos-lock.json` with direct dependencies and local library remote URL, commit, and Git tree. `teaos install` restores missing libraries at the locked revision; files-only checkouts use a content hash to detect edits.
 - Added `--lock-source=local|remote` (default: `local`). Remote mode checks the published application lock and stages only changed libraries before switching them into place. Previous clean checkouts are retained for recovery; dirty local checkouts are not overwritten.
 - Added lightweight local Git snapshot inspection for HEAD, refs, and loose commit trees, with Git fallback for packed objects and Git status for worktree changes. Dependency inspection no longer rewrites an unchanged `teaos.json`.
 - Distinguished single-app projects (no `apps/`, root `teaos.json`) from multi-app projects (`apps/` exists). An empty or entirely invalid `apps/` directory now fails; explicit app installation can bootstrap the first app. Root single-app projects also support remote lock mode.
 - Added per-repository URL mappings in `teaos.json` (`apps/name` and `lib/name`). App-level mappings override workspace mappings for direct and transitive libraries; resolved URLs are recorded in each app's `teaos-lock.json`. Conflicting app mappings cannot silently reuse the same shared library checkout.
+- Added `Mailbox` for ordered message delivery to a `teaos.run()` context. `close()` wakes pending receivers with `MailboxClosedError` (`ERR_MAILBOX_CLOSED`); queued messages can still be received before the error.
+- Added `teaos.hooks` and `teaos.extensionHooks` for statically bundled package modules and extension indexes, including Workers bundles where runtime filesystem discovery is unavailable. These hooks are process-wide loader mappings, not access-control rules.
 
 ### 0.1.1 (2026-10-31)
 
@@ -447,6 +449,61 @@ const context2 = {};
 teaos.run(context1, () => { ... teaos.getContext(); ... });
 teaos.run(context2, () => { ... teaos.getContext(); ... });
 ```
+
+`teaos.run(context, callback)` returns the callback's result (including its Promise). `getContext()` returns the current async context; outside `run()` it returns a shared fallback object. Use a distinct context for each task or request, and do not put request-specific state in the fallback object. `teaos.supportsAsyncContext` reports whether `run()` is available.
+
+Mailbox message loop
+
+```javascript
+const teaos = require('teaos');
+const mailbox = new teaos.Mailbox();
+
+(async () => {
+  // Pseudo-process B receives messages in its own context.
+  const processB = teaos.run({ pid: 2 }, async () => {
+    try {
+      while (true) {
+        const message = await mailbox.recv();
+        console.log('Process B:', teaos.getContext().pid, message);
+      }
+    } catch (error) {
+      if (error.code !== 'ERR_MAILBOX_CLOSED') throw error;
+    }
+  });
+
+  // Pseudo-process A sends; its context does not replace B's context.
+  teaos.run({ pid: 1 }, () => {
+    mailbox.send({ type: 'SIGN', data: 'hello' });
+  });
+
+  mailbox.close();
+  await processB;
+})();
+```
+
+`send()` delivers to the oldest waiting receiver or appends to the FIFO queue. `recv()` returns a Promise. After `close()`, `send()` throws; pending receivers reject, while messages already queued remain readable. `close()` is idempotent. `Mailbox` preserves the receiving async context but does not isolate mutable objects in messages; validate and copy messages at a trust boundary.
+
+Statically bundled module and extension hooks
+
+```javascript
+const teaos = require('teaos');
+
+// Register before teaos.use() or teaos.require() loads this package.
+teaos.hooks['@example'] = () => require('./lib/example');
+teaos.hooks['@example/lib/extensions/command/hello.js'] =
+  () => require('./lib/example/lib/extensions/command/hello.js');
+teaos.extensionHooks['@example'] = () => ({
+  command: { 'hello.js': true }
+});
+
+teaos.use('@example', {
+  resources: { command: { 'hello.js': true } }
+});
+```
+
+`teaos.require(name)` checks `hooks[name]()` before normal module resolution. `teaos.extensions(name)` checks `extensionHooks[name]()` before scanning `lib/extensions`. Hook keys must exactly match the names passed to `teaos.require()` and the extension paths constructed by `teaos.use()`. The callbacks are invoked on lookup, not at registration; use ordinary module caching inside them if needed. `teaos.use(name, { resources: '*' })` loads all extension types returned by the index, so its hook keys must cover each type directory (`@example/lib/extensions/command` in this example), not just individual files. For selected modules, use the nested `resources` form shown above. While an extension is loaded, `teaos.extensionKey()` identifies its full key inside a `teaos.on('declare', handler)` listener.
+
+The hook maps are shared across contexts and only replace module discovery. Apply manifest/resource authorization separately before allowing a context to use a declared extension. A static bundle still needs its modules included by the bundler; registering a hook alone does not bundle them.
 
 integrated resources API
 
